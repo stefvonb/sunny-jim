@@ -1,1 +1,6 @@
-debug: true
+application:
+  debug: true
+  logs:
+    log_filename: "logs.txt"
+    max_filesize: 5 # MB
+    num_backups: 2

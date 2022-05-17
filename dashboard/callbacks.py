@@ -1,11 +1,15 @@
 from dash.dependencies import Input, Output
 from . import functions
+from . import tabs
 
-CALLBACKS = {"test_callback":
-    {'output': Output('my-output', 'children'),
-    'input': Input('my-input', 'value'),
-    'function': functions.update_output_div}
+CALLBACKS = {
+    "tabs": {
+        'output': Output('tab-content', 'children'),
+        'input': [Input("tabs", "active_tab"), Input("store", "data")],
+        'function': tabs.render_tab_content
+    }
 }
+
 
 def register_callbacks(app):
     for callback_name, callback in CALLBACKS.items():
