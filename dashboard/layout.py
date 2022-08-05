@@ -10,7 +10,7 @@ MASTER_LAYOUT = dbc.Container(
         dbc.Tabs(
             [
                 dbc.Tab(label="Summary", tab_id="summary-tab"),
-                dbc.Tab(label="Logs", tab_id="logs-tab")
+                dbc.Tab(label="Logs", tab_id="logs-tab", id="logs=tab")
             ],
             id="tabs",
             active_tab="summary-tab",
