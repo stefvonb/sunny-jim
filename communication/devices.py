@@ -1,6 +1,7 @@
 import abc
 import logging
 import threading
+import time
 from abc import abstractmethod, ABC
 from typing import List
 
@@ -15,6 +16,11 @@ class Device(abc.ABC):
     running: bool = False
 
     _observers: List[DeviceObserver] = []
+
+    # Since these are very device specific, they are constants on the device classes
+    # They can be overridden for different device implementations which might behave differently
+    NUM_RECONNECTION_TRIALS: int = 5
+    RECONNECTION_TRIAL_INTERVAL: int = 1
 
     def __init__(self):
         self.log = logging.getLogger(self.__class__.__name__)
@@ -32,6 +38,19 @@ class Device(abc.ABC):
     @abstractmethod
     def try_disconnect(self) -> bool:
         pass
+
+    def try_reconnect(self):
+        self.log.info("Attempting to reconnect device...")
+        for n_trial in range(self.NUM_RECONNECTION_TRIALS):
+            self.reconnect()
+            if self.connected:
+                self.log.info("Successfully reconnected device.")
+                return
+            else:
+                self.log.warning(f"Failed to reconnect device on trial {n_trial + 1}.")
+                time.sleep(self.RECONNECTION_TRIAL_INTERVAL)
+
+        self.log.error(f"Device failed to connect after {self.NUM_RECONNECTION_TRIALS} trials.")
 
     def reconnect(self) -> None:
         self.disconnect()
@@ -93,6 +112,10 @@ class Battery(Device, ABC):
             state_dictionary[f"temperature_{i+1}"] = temperature
 
         return state_dictionary
+
+
+class Inverter(Device, ABC):
+    pass
 
 
 class DeviceInitialisationError(Exception):

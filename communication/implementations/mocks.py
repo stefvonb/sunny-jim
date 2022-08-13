@@ -36,7 +36,7 @@ class MockBattery(Battery):
         return True
 
     def __update_state(self):
-        while True:
+        while self.running:
             time.sleep(self.UPDATE_INTERVAL)
             with self.thread_lock:
                 self.time_updated = time.time()

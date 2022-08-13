@@ -65,7 +65,13 @@ class DynessA48100Com(communication.devices.Battery):
         response_frame = b''
 
         while self.running:
-            if self.bms.inWaiting():
+            try:
+                in_waiting = self.bms.inWaiting()
+            except:
+                # Not good practice to catch all errors, but the idea is that the polling thread will deal with
+                # connection issues. So we'll just wait here until things are connected again...
+                continue
+            if in_waiting:
                 sliding_buffer += self.bms.read()
                 sliding_buffer = sliding_buffer[1:]
 
@@ -100,12 +106,17 @@ class DynessA48100Com(communication.devices.Battery):
 
     def __serial_poll_request(self):
         self.log.info("Started serial polling loop.")
-        while self.running:
+        while self.running and self.connected:
             if time() - self.time_updated > 1.5:
-                self.bms.write(self.SERIAL_DATA_REQUEST)
-                sleep(1)
+                try:
+                    self.bms.write(self.SERIAL_DATA_REQUEST)
+                    sleep(1)
+                except serial.SerialException:
+                    self.connected = False
+                    self.try_reconnect()
 
         self.log.info("Stopped serial polling loop.")
+        self.stop()
 
     def __decode_state(self, buffer: bytes) -> dict:
         state = {}

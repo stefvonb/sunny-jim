@@ -3,7 +3,7 @@ import time
 from typing import Dict, Tuple
 import configuration
 from communication.devices import DeviceInitialisationError, Device
-from communication.observers import PrintObserver
+from communication.observers import PrintObserver, CsvFileLoggingObserver
 from configuration import config
 import importlib
 
@@ -80,8 +80,15 @@ if __name__ == "__main__":
         log.error("No devices running!")
 
     else:
-        for device in running_devices.values():
-            device.attach_observer(PrintObserver())
-        time.sleep(100)
+        for device_id, device in running_devices.items():
+            # device.attach_observer(PrintObserver())
+            if config["csv_data_logging"]:
+                device.attach_observer(CsvFileLoggingObserver(config["csv_data_logging"]["base_filepath"], device_id,
+                                                              config["csv_data_logging"]["lines_per_file"]))
+        try:
+            time.sleep(100_000)
+        except KeyboardInterrupt:
+            pass
+
         for device in running_devices.values():
             device.stop()

@@ -131,5 +131,6 @@ dmypy.json
 # PyCharm stuff
 .idea/
 
-# Local logs
+# Local logs and data
 logs.txt*
+data/
