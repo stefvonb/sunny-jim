@@ -134,3 +134,5 @@ dmypy.json
 # Local logs and data
 logs.txt*
 data/
+
+.DS_Store
