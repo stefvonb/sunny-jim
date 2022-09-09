@@ -1,6 +1,6 @@
 import threading
 
-from crc16 import crc16xmodem
+from communication.crc16 import crc16xmodem
 
 import communication.devices
 import serial
