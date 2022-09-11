@@ -7,4 +7,4 @@ COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 COPY . .
-CMD ["python3", "connect_devices.py"]
+CMD ["python3", "sunny_jim_webapp/manage.py", "runserver"]
