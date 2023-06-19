@@ -16,7 +16,7 @@ csv_data_logging:
 devices:
   Dyness A48100:
     type: "DynessA48100Com"
-    serial_port: "/dev/cu.usbserial-1410"
+    serial_port: "/dev/ttyUSB0"
 #  Mock Battery:
 #    type: "MockBattery"
 #    voltage_value: 48.0
