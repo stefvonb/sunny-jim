@@ -2,13 +2,14 @@ import yaml
 import logging
 from logging.handlers import RotatingFileHandler
 
-# Open up a config file
-with open("config.yaml", 'r') as config_file:
-    config = yaml.safe_load(config_file)
+
+def load_config(file_path: str) -> dict:
+    with open(file_path, 'r') as config_file:
+        return yaml.safe_load(config_file)
 
 
-def configure_logging():
-    log_handler = logging.handlers.RotatingFileHandler(
+def configure_logging(config: dict):
+    log_handler = RotatingFileHandler(
         config["application"]["logs"]["log_filename"],
         mode='a',
         maxBytes=config["application"]["logs"]["max_filesize"] * 1024 * 1024,
@@ -16,9 +17,12 @@ def configure_logging():
         encoding=None,
         delay=0
     )
-    log_handler.setLevel(logging.INFO)
+
+    log_level = logging.DEBUG if config["application"]["debug"] else logging.INFO
+    log_handler.setLevel(log_level)
+
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=log_level,
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[log_handler]
