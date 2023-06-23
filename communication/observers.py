@@ -2,7 +2,10 @@ import abc
 import csv
 import datetime
 import os
+import asyncio
+import logging
 
+log = logging.getLogger("Observers")
 
 class DeviceObserver(abc.ABC):
     @abc.abstractmethod
@@ -19,6 +22,7 @@ class CsvFileLoggingObserver(DeviceObserver):
     def __init__(self, base_filepath: str, device_id: str, lines_per_file: int):
         self.base_filepath = base_filepath
         self.device_id = device_id
+        log.info(f"Creating CSV observer for device '{device_id}' with base file path '{base_filepath}'...")
         self.lines_per_file = lines_per_file
 
         self.current_file = None
@@ -57,3 +61,21 @@ class CsvFileLoggingObserver(DeviceObserver):
     def __del__(self):
         if self.current_file is not None:
             self.current_file.close()
+            
+
+class WebsocketStreamingObserver(DeviceObserver):
+    def __init__(self, websocket):
+        self.websocket = websocket
+        log.info("Registering device to websocket server...")
+
+
+    async def async_update(self, device):
+        device_state = device.get_state_dictionary()
+
+        if not device_state:
+            return
+
+        await self.websocket.send(device_state)
+
+    def update(self, device):
+        asyncio.run(self.async_update(device))

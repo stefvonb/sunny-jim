@@ -5,6 +5,8 @@ application:
     max_filesize: 5 # MB
     num_backups: 2
 
+print_updates: true
+
 connections: # Settings for connecting devices
   num_connection_tries: 5
   stall_time: 2 # seconds
@@ -13,16 +15,11 @@ csv_data_logging:
   base_filepath: "data"
   lines_per_file: 50
 
+websocket_streaming:
+  host: "localhost"
+  port: 8765
+
 devices:
   Dyness A48100:
     type: "DynessA48100Com"
     serial_port: "/dev/ttyUSB0"
-#  Mock Battery:
-#    type: "MockBattery"
-#    voltage_value: 48.0
-#    current_value: 7.5
-#    soc_value: 0.8
-#    soh_value: 0.95
-#    cell_voltage_value: 3.5
-#    temperature_value: 18
-#    num_cells: 8

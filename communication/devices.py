@@ -1,16 +1,15 @@
 import abc
 import logging
-import threading
 import time
 from abc import abstractmethod, ABC
 from typing import List
+import asyncio
 
 from communication.observers import DeviceObserver
 
 
 class Device(abc.ABC):
     time_updated: float = 0
-    threads: List[threading.Thread] = None
 
     connected: bool = False
     running: bool = False
@@ -25,24 +24,24 @@ class Device(abc.ABC):
     def __init__(self):
         self.log = logging.getLogger(self.__class__.__name__)
 
-    def connect(self) -> None:
-        self.connected = self.try_connect()
+    async def connect(self) -> None:
+        self.connected = await self.try_connect()
 
     @abstractmethod
-    def try_connect(self) -> bool:
+    async def try_connect(self) -> bool:
         pass
 
-    def disconnect(self) -> None:
-        self.connected = not self.try_disconnect()
+    async def disconnect(self) -> None:
+        self.connected = not await self.try_disconnect()
 
     @abstractmethod
-    def try_disconnect(self) -> bool:
+    async def try_disconnect(self) -> bool:
         pass
 
-    def try_reconnect(self):
+    async def try_reconnect(self):
         self.log.info("Attempting to reconnect device...")
         for n_trial in range(self.NUM_RECONNECTION_TRIALS):
-            self.reconnect()
+            await self.reconnect()
             if self.connected:
                 self.log.info("Successfully reconnected device.")
                 return
@@ -52,19 +51,38 @@ class Device(abc.ABC):
 
         self.log.error(f"Device failed to connect after {self.NUM_RECONNECTION_TRIALS} trials.")
 
-    def reconnect(self) -> None:
-        self.disconnect()
-        self.connect()
+    async def reconnect(self) -> None:
+        await self.disconnect()
+        await self.connect()
 
-    def run(self) -> None:
+    @abstractmethod
+    async def send(self) -> None:
+        pass
+
+    @abstractmethod
+    async def receive(self) -> None:
+        pass
+
+    async def send_loop(self) -> None:
+        while True:
+            if self.running:
+                await self.send()
+            else:
+                return
+
+    async def receive_loop(self) -> None:
+        while True:
+            if self.running:
+                await self.receive()
+                self.notify_observers()
+            else:
+                return
+
+    async def run(self) -> None:
         self.running = True
 
-        if self.threads is None:
-            self.log.error("Monitoring thread function(s) not defined.")
-            self.running = False
-            return
-        for thread in self.threads:
-            thread.start()
+        # Await both the send and receive loop tasks
+        await asyncio.gather(self.send_loop(), self.receive_loop())
 
     def stop(self) -> None:
         self.running = False

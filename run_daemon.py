@@ -15,19 +15,24 @@ if __name__ == '__main__':
     config = configuration.load_config(args.config)
     configuration.configure_logging(config)
 
-    running_devices = run_devices(config)
+    asynchronous_tasks = []
+
+    loop = asyncio.new_event_loop()
+    running_devices = loop.run_until_complete(run_devices(config))
 
     if len(running_devices) == 0:
         log.error("No devices running!")
 
     else:
         attach_observers(running_devices, config)
+        asynchronous_tasks = [device.run() for device in running_devices.values()]
 
-        loop = asyncio.new_event_loop()
         try:
-            loop.run_forever()
+            loop.run_until_complete(asyncio.wait(asynchronous_tasks))
         except KeyboardInterrupt:
             log.info("Keyboard interrupt received, stopping devices...")
             for device in running_devices.values():
                 device.stop()
+        finally:
+            # TODO: Still not sure why the loop doesn't close properly
             loop.close()

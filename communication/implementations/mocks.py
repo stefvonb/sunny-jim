@@ -1,6 +1,6 @@
 import random
-import threading
 import time
+import asyncio
 
 import communication
 from communication.devices import Battery
@@ -25,29 +25,26 @@ class MockBattery(Battery):
 
         self.UPDATE_INTERVAL = 1
 
-        update_thread = threading.Thread(target=self.__update_state)
-        self.threads = [update_thread]
-        self.thread_lock = threading.Lock()
-
-    def try_connect(self) -> bool:
+    async def try_connect(self) -> bool:
         return True
 
-    def try_disconnect(self) -> bool:
+    async def try_disconnect(self) -> bool:
         return True
 
-    def __update_state(self):
-        while self.running:
-            time.sleep(self.UPDATE_INTERVAL)
-            with self.thread_lock:
-                self.time_updated = time.time()
-                self.voltage = MockBattery.random_one_percent(self.voltage_value)
-                self.current = MockBattery.random_one_percent(self.current_value)
-                self.state_of_charge = MockBattery.random_one_percent(self.soc_value)
-                self.state_of_health = self.soh_value
-                self.cell_voltages = [MockBattery.random_one_percent(self.cell_voltage_value) for _ in
-                                      range(self.num_cells)]
-                self.temperatures = [MockBattery.random_one_percent(self.temperature_value)]
-            self.notify_observers()
+    async def receive(self):
+        await asyncio.sleep(self.UPDATE_INTERVAL)
+        self.time_updated = time.time()
+        self.voltage = MockBattery.random_one_percent(self.voltage_value)
+        self.current = MockBattery.random_one_percent(self.current_value)
+        self.state_of_charge = MockBattery.random_one_percent(self.soc_value)
+        self.state_of_health = self.soh_value
+        self.cell_voltages = [MockBattery.random_one_percent(self.cell_voltage_value) for _ in
+                                range(self.num_cells)]
+        self.temperatures = [MockBattery.random_one_percent(self.temperature_value)]
+
+    async def send(self):
+        # Do nothing
+        await asyncio.sleep(self.UPDATE_INTERVAL)
 
     @staticmethod
     def random_one_percent(number: float):

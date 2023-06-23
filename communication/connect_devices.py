@@ -38,14 +38,14 @@ def initialise_devices(config: dict) -> Dict[str, Device]:
     return initialised_devices
 
 
-def connect_device(device_info: Tuple[str, Device], config: dict) -> Device:
+async def connect_device(device_info: Tuple[str, Device], config: dict) -> Device:
     device_key = device_info[0]
     device = device_info[1]
 
     log.info(f"Attempting to connect device {device_key}...")
 
-    for trial in range(config['connections']['num_connection_tries']):
-        device.connect()
+    for _ in range(config['connections']['num_connection_tries']):
+        await device.connect()
         if device.connected:
             log.info(f"Successfully connected device {device_key}.")
             return device
@@ -56,14 +56,13 @@ def connect_device(device_info: Tuple[str, Device], config: dict) -> Device:
     log.error(f"Failed to connect device {device_key}.")
 
 
-def run_devices(config: dict) -> Dict[str, Device]:
+async def run_devices(config: dict) -> dict[str, Device]:
     initialised_devices = initialise_devices(config)
 
     connected_devices = {}
     for device_info in initialised_devices.items():
-        connected_device = connect_device(device_info, config)
+        connected_device = await connect_device(device_info, config)
         if connected_device is not None:
             connected_devices[device_info[0]] = connected_device
-            connected_device.run()
 
     return connected_devices

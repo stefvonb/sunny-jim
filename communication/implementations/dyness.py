@@ -1,11 +1,10 @@
-import threading
-
 from communication.crc16 import crc16xmodem
 
 import communication.devices
+import asyncio
+import serial_asyncio
 import serial
-from time import sleep, time
-
+from time import time
 
 class DynessA48100Com(communication.devices.Battery):
     NUM_CELLS: int = 15
@@ -20,7 +19,7 @@ class DynessA48100Com(communication.devices.Battery):
         except KeyError as key_error:
             raise communication.devices.DeviceInitialisationError(f"Missing field: {key_error}")
 
-        self.bms = None
+        self.bms_reader, self.bms_writer = None, None
 
         # The following bytes are sent to the serial port to get the battery status
         self.SERIAL_DATA_REQUEST = bytearray([250, 16, 0, 0, 0, 1, 1])
@@ -33,16 +32,19 @@ class DynessA48100Com(communication.devices.Battery):
         # check this first
         self.RESPONSE_START_BYTES = bytearray.fromhex("FA8000")
         self.SLIDING_BUFFER_SIZE = len(self.RESPONSE_START_BYTES)
+        
+        # Set up some variables to track the data received
+        self.sliding_buffer = b'000'
+        self.response_frame = b''
 
-        reading_thread = threading.Thread(target=self.__read_serial_response)
-        writing_thread = threading.Thread(target=self.__serial_poll_request)
+    async def __get_serial(self):
+        reader, writer = await serial_asyncio.open_serial_connection(url=self.serial_port, baudrate=9600)
+        return reader, writer
 
-        self.threads = [reading_thread, writing_thread]
-        self.thread_lock = threading.Lock()
-
-    def try_connect(self) -> bool:
+    async def try_connect(self) -> bool:
         try:
-            self.bms = serial.Serial(self.serial_port, 9600)
+            self.bms_reader, self.bms_writer = await self.__get_serial()
+            await self.bms_writer.drain()
         except serial.SerialException as serial_exception:
             self.log.error(serial_exception)
             return False
@@ -50,73 +52,53 @@ class DynessA48100Com(communication.devices.Battery):
             self.log.error(value_error)
             return False
 
-        self.bms.reset_input_buffer()
-        self.bms.reset_output_buffer()
-
         return True
 
-    def try_disconnect(self) -> bool:
-        self.bms.close()
+    async def try_disconnect(self) -> bool:
+        self.bms_reader.close()
+        self.bms_writer.close()
         return True
 
-    def __read_serial_response(self):
-        self.log.info("Started listening for state updates.")
-        sliding_buffer = b'000'
-        response_frame = b''
-
-        while self.running:
+    async def receive(self):
+        while len(self.response_frame) < 88:
             try:
-                in_waiting = self.bms.inWaiting()
-            except:
-                # Not good practice to catch all errors, but the idea is that the polling thread will deal with
-                # connection issues. So we'll just wait here until things are connected again...
+                next_bit = await self.bms_reader.read(1)
+                self.sliding_buffer += next_bit
+            except Exception as e:
                 continue
-            if in_waiting:
-                sliding_buffer += self.bms.read()
-                sliding_buffer = sliding_buffer[1:]
+            self.sliding_buffer = self.sliding_buffer[1:]
 
-                if response_frame:
-                    response_frame += sliding_buffer[-1:]
+            if self.response_frame:
+                self.response_frame += self.sliding_buffer[-1:]
 
-                if sliding_buffer == self.RESPONSE_START_BYTES:
-                    response_frame = sliding_buffer[:]
+            if self.sliding_buffer == self.RESPONSE_START_BYTES:
+                self.response_frame = self.sliding_buffer[:]
 
-                if len(response_frame) >= 88:
-                    try:
-                        current_state = self.__decode_state(response_frame)
-                    except Exception as e:
-                        self.log.error(f"Something went wrong updating state: {e}")
-                        response_frame = b''
-                        continue
+        try:
+            current_state = self.__decode_state(self.response_frame)
+        except Exception as e:
+            self.log.error(f"Something went wrong updating state: {e}")
+            self.response_frame = b''
+            return
 
-                    with self.thread_lock:
-                        # Update the logical state of the battery
-                        self.time_updated = time()
-                        self.voltage = current_state['voltage']
-                        self.current = current_state['current']
-                        self.state_of_charge = current_state["SOC"]
-                        self.state_of_health = current_state["SOH"]
-                        self.cell_voltages = current_state["cell_voltages"]
-                        self.temperatures = current_state["temperatures"]
-                        self.notify_observers()
+        # Update the logical state of the battery
+        self.time_updated = time()
+        self.voltage = current_state['voltage']
+        self.current = current_state['current']
+        self.state_of_charge = current_state["SOC"]
+        self.state_of_health = current_state["SOH"]
+        self.cell_voltages = current_state["cell_voltages"]
+        self.temperatures = current_state["temperatures"]
+        self.response_frame = b''
 
-                    response_frame = b''
-
-        self.log.info("Stopped listening for state updates.")
-
-    def __serial_poll_request(self):
-        self.log.info("Started serial polling loop.")
-        while self.running and self.connected:
-            if time() - self.time_updated > 1.5:
-                try:
-                    self.bms.write(self.SERIAL_DATA_REQUEST)
-                    sleep(1)
-                except serial.SerialException:
-                    self.connected = False
-                    self.try_reconnect()
-
-        self.log.info("Stopped serial polling loop.")
-        self.stop()
+    async def send(self):
+        try:
+            await self.bms_writer.drain()
+            self.bms_writer.write(self.SERIAL_DATA_REQUEST)
+            await asyncio.sleep(1.5)
+        except serial.SerialException:
+            self.connected = False
+            self.try_reconnect()
 
     def __decode_state(self, buffer: bytes) -> dict:
         state = {}
@@ -139,11 +121,3 @@ class DynessA48100Com(communication.devices.Battery):
 
     def __del__(self):
         self.stop()
-
-        if self.bms is None:
-            return
-
-        try:
-            self.bms.close()
-        except serial.SerialException:
-            pass
