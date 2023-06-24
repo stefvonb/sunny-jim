@@ -20,6 +20,8 @@ def configure_logging(config: dict):
         delay=0
     )
 
+    console_handler = logging.StreamHandler()
+
     log_level = logging.DEBUG if config["application"]["debug"] else logging.INFO
     log_handler.setLevel(log_level)
 
@@ -27,5 +29,5 @@ def configure_logging(config: dict):
         level=log_level,
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[log_handler]
+        handlers=[log_handler, console_handler]
     )
