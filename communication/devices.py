@@ -20,7 +20,7 @@ class Device(abc.ABC):
     connected: bool = False
     running: bool = False
 
-    _observers: List[DeviceObserver] = []
+    _observers: list[DeviceObserver]
 
     # Since these are very device specific, they are constants on the device classes
     # They can be overridden for different device implementations which might behave differently
@@ -33,6 +33,7 @@ class Device(abc.ABC):
     def __init__(self, device_id: str):
         self.device_id = device_id
         self.log = logging.getLogger(self.device_id)
+        self._observers = []
 
     async def connect(self) -> None:
         self.connected = await self.try_connect()
@@ -149,7 +150,43 @@ class Battery(Device, ABC):
 
 
 class Inverter(Device, ABC):
-    pass
+    grid_voltage: float = None
+    grid_frequency: float = None
+    output_voltage: float = None
+    output_frequency: float = None
+    load_power: float = None
+    load_va: float = None
+    load_percentage: float = None
+    battery_charge_current: float = None
+    battery_discharge_current: float = None
+    pv_charge_current: float = None
+    pv_input_voltage: float = None
+    pv_input_power: float = None
+
+    device_type: DeviceType = DeviceType.INVERTER
+
+    def get_state_dictionary(self):
+        state_dictionary = super().get_state_dictionary()
+        if any(e is None for e in [self.grid_voltage, self.grid_frequency, self.output_voltage, self.output_frequency,
+                                   self.load_power, self.load_va, self.load_percentage, self.battery_charge_current,
+                                   self.battery_discharge_current, self.pv_charge_current, self.pv_input_voltage,
+                                   self.pv_input_power]):
+            return None
+
+        state_dictionary["grid_voltage"] = self.grid_voltage
+        state_dictionary["grid_frequency"] = self.grid_frequency
+        state_dictionary["output_voltage"] = self.output_voltage
+        state_dictionary["output_frequency"] = self.output_frequency
+        state_dictionary["load_power"] = self.load_power
+        state_dictionary["load_va"] = self.load_va
+        state_dictionary["load_percentage"] = self.load_percentage
+        state_dictionary["battery_charge_current"] = self.battery_charge_current
+        state_dictionary["battery_discharge_current"] = self.battery_discharge_current
+        state_dictionary["pv_charge_current"] = self.pv_charge_current
+        state_dictionary["pv_input_voltage"] = self.pv_input_voltage
+        state_dictionary["pv_input_power"] = self.pv_input_power
+
+        return state_dictionary
 
 
 class DeviceInitialisationError(Exception):

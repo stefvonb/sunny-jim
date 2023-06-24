@@ -16,10 +16,14 @@ csv_data_logging:
   lines_per_file: 50
 
 websocket_streaming:
-  host: "localhost"
+  host: "0.0.0.0"
   port: 8765
 
 devices:
   Dyness A48100:
     type: "DynessA48100Com"
     serial_port: "/dev/ttyUSB0"
+
+  Kodak OGX 5.48:
+    type: "KodakOGX548Inverter"
+    serial_port: "/dev/ttyUSB1"

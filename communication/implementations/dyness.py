@@ -37,13 +37,13 @@ class DynessA48100Com(communication.devices.Battery):
         self.sliding_buffer = b'000'
         self.response_frame = b''
 
-    async def __get_serial(self):
+    async def _get_serial(self):
         reader, writer = await serial_asyncio.open_serial_connection(url=self.serial_port, baudrate=9600)
         return reader, writer
 
     async def try_connect(self) -> bool:
         try:
-            self.bms_reader, self.bms_writer = await self.__get_serial()
+            self.bms_reader, self.bms_writer = await self._get_serial()
             await self.bms_writer.drain()
         except serial.SerialException as serial_exception:
             self.log.error(serial_exception)
@@ -75,7 +75,7 @@ class DynessA48100Com(communication.devices.Battery):
                 self.response_frame = self.sliding_buffer[:]
 
         try:
-            current_state = self.__decode_state(self.response_frame)
+            current_state = self._decode_state(self.response_frame)
         except Exception as e:
             self.log.error(f"Something went wrong updating state: {e}")
             self.response_frame = b''
@@ -100,7 +100,7 @@ class DynessA48100Com(communication.devices.Battery):
             self.connected = False
             self.try_reconnect()
 
-    def __decode_state(self, buffer: bytes) -> dict:
+    def _decode_state(self, buffer: bytes) -> dict:
         state = {}
 
         state["cell_voltages"] = []
