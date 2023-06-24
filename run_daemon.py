@@ -24,8 +24,9 @@ if __name__ == '__main__':
         log.error("No devices running!")
 
     else:
-        attach_observers(running_devices, config)
-        asynchronous_tasks = [device.run() for device in running_devices.values()]
+        observer_tasks = attach_observers(running_devices, config)
+        asynchronous_tasks.extend(observer_tasks)
+        asynchronous_tasks.extend([device.run() for device in running_devices.values()])
 
         try:
             loop.run_until_complete(asyncio.wait(asynchronous_tasks))

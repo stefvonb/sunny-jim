@@ -4,6 +4,7 @@ import datetime
 import os
 import asyncio
 import logging
+import websockets
 
 log = logging.getLogger("Observers")
 
@@ -63,19 +64,40 @@ class CsvFileLoggingObserver(DeviceObserver):
             self.current_file.close()
             
 
-class WebsocketStreamingObserver(DeviceObserver):
-    def __init__(self, websocket):
-        self.websocket = websocket
-        log.info("Registering device to websocket server...")
+class WebsocketServer:
+    def __init__(self, host:str, port:int, shared_queue: asyncio.Queue):
+        self.host = host
+        self.port = port
+        self.connections = set()
+        self.message_queue = shared_queue
+
+    async def register_connection(self, websocket):
+        self.connections.add(websocket)
+        log.info(f"New connection from {websocket.remote_address}")
+        try:
+            await websocket.wait_closed()
+        finally:
+            self.connections.remove(websocket)
+
+    async def run_server(self):
+        log.info(f"Starting websocket server at ws://{self.host}:{self.port}...")
+        async with websockets.serve(self.register_connection, self.host, self.port):
+            while True:
+                message = await self.message_queue.get()
+                for connection in self.connections:
+                    await connection.send(message)
 
 
-    async def async_update(self, device):
+class WebsocketObserver(DeviceObserver):
+    def __init__(self, device_id: str, shared_queue: asyncio.Queue):
+        self.device_id = device_id
+        self.message_queue = shared_queue
+
+    def update(self, device):
         device_state = device.get_state_dictionary()
 
         if not device_state:
             return
 
-        await self.websocket.send(device_state)
-
-    def update(self, device):
-        asyncio.run(self.async_update(device))
+        message = f"{self.device_id} {device_state}"
+        self.message_queue.put_nowait(message)
