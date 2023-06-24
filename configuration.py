@@ -10,6 +10,8 @@ def load_config(file_path: str) -> dict:
 
 def configure_logging(config: dict):
     logging.getLogger('asyncio').setLevel(logging.WARNING)
+    logging.getLogger('websockets.server').setLevel(logging.WARNING)
+    logging.getLogger('websockets.protocol').setLevel(logging.WARNING)
 
     log_handler = RotatingFileHandler(
         config["application"]["logs"]["log_filename"],

@@ -4,8 +4,14 @@ import time
 from abc import abstractmethod, ABC
 from typing import List
 import asyncio
+from enum import Enum
 
 from communication.observers import DeviceObserver
+
+class DeviceType(Enum):
+    UNSPECIFIED = "unspecified"
+    INVERTER = "inverter"
+    BATTERY = "battery"
 
 
 class Device(abc.ABC):
@@ -21,8 +27,12 @@ class Device(abc.ABC):
     NUM_RECONNECTION_TRIALS: int = 5
     RECONNECTION_TRIAL_INTERVAL: int = 1
 
-    def __init__(self):
-        self.log = logging.getLogger(self.__class__.__name__)
+    device_type: DeviceType = DeviceType.UNSPECIFIED
+    device_id: str
+
+    def __init__(self, device_id: str):
+        self.device_id = device_id
+        self.log = logging.getLogger(self.device_id)
 
     async def connect(self) -> None:
         self.connected = await self.try_connect()
@@ -90,6 +100,10 @@ class Device(abc.ABC):
     def get_state_dictionary(self) -> dict:
         return {"time_updated": self.time_updated}
 
+    def get_information_dictionary(self) -> dict:
+        return {"device_id": self.device_id,
+                "device_type": self.device_type.value}
+
     def notify_observers(self, modifier=None):
         for observer in self._observers:
             if observer != modifier:
@@ -113,6 +127,8 @@ class Battery(Device, ABC):
     state_of_health: float = None
     cell_voltages: List[float] = None
     temperatures: List[float] = None
+
+    device_type: DeviceType = DeviceType.BATTERY
 
     def get_state_dictionary(self):
         state_dictionary = super().get_state_dictionary()

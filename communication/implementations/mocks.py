@@ -9,8 +9,8 @@ from communication.devices import Battery
 class MockBattery(Battery):
     UPDATE_INTERVAL: int
 
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(self, device_id: str, **kwargs):
+        super().__init__(device_id)
 
         try:
             self.voltage_value = kwargs['voltage_value']

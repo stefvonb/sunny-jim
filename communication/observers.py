@@ -5,6 +5,7 @@ import os
 import asyncio
 import logging
 import websockets
+import json
 
 log = logging.getLogger("Observers")
 
@@ -94,10 +95,13 @@ class WebsocketObserver(DeviceObserver):
         self.message_queue = shared_queue
 
     def update(self, device):
+        device_info = device.get_information_dictionary()
         device_state = device.get_state_dictionary()
 
         if not device_state:
             return
 
-        message = f"{self.device_id} {device_state}"
+        json_message = {"device_info": device_info, "device_state": device_state}
+
+        message = json.dumps(json_message)
         self.message_queue.put_nowait(message)

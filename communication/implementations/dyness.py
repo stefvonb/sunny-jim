@@ -12,8 +12,8 @@ class DynessA48100Com(communication.devices.Battery):
     RESPONSE_START_BYTES: bytearray
     SLIDING_BUFFER_SIZE: int
 
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(self, device_id: str, **kwargs):
+        super().__init__(device_id)
         try:
             self.serial_port = kwargs['serial_port']
         except KeyError as key_error:

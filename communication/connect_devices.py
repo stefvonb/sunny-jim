@@ -26,7 +26,7 @@ def initialise_devices(config: dict) -> Dict[str, Device]:
         constructor_parameters = {k: v for k, v in device_setup.items() if k != "type"}
 
         try:
-            initialised_devices[device_key] = device_class(**constructor_parameters)
+            initialised_devices[device_key] = device_class(device_key, **constructor_parameters)
         except DeviceInitialisationError as error:
             log.error(f"Problem initialising device {device_key}: {error}")
             continue
