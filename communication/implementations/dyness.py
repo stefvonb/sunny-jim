@@ -84,7 +84,7 @@ class DynessA48100Com(communication.devices.Battery):
         # Update the logical state of the battery
         self.time_updated = time()
         self.voltage = current_state['voltage']
-        self.current = current_state['current']
+        self.current = -current_state['current']
         self.state_of_charge = current_state["SOC"]
         self.state_of_health = current_state["SOH"]
         self.cell_voltages = current_state["cell_voltages"]

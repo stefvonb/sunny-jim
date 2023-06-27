@@ -55,7 +55,10 @@ class KodakOGX548Inverter(Inverter):
         if len(response) == 0:
             return None
 
-        decoded_state = self._decode_state(response)
+        try:
+            decoded_state = self._decode_state(response)
+        except ValueError:
+            return None
 
         self.time_updated = time()
         self.grid_voltage = decoded_state['grid_ac_voltage']
@@ -65,8 +68,7 @@ class KodakOGX548Inverter(Inverter):
         self.load_va = decoded_state['load_va']
         self.load_power = decoded_state['load_power']
         self.load_percentage = decoded_state['load_percentage']
-        self.battery_charge_current = decoded_state['battery_charge_current']
-        self.battery_discharge_current = decoded_state['battery_discharge_current']
+        self.battery_charge_current = decoded_state['battery_charge_current'] if decoded_state['battery_charge_current'] > 0 else -decoded_state['battery_discharge_current']
         self.pv_charge_current = decoded_state['pv_to_battery_charge_current']
         self.pv_input_voltage = decoded_state['pv_voltage']
         self.pv_input_power = decoded_state['pv_input_power']

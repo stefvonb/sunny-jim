@@ -158,7 +158,6 @@ class Inverter(Device, ABC):
     load_va: float = None
     load_percentage: float = None
     battery_charge_current: float = None
-    battery_discharge_current: float = None
     pv_charge_current: float = None
     pv_input_voltage: float = None
     pv_input_power: float = None
@@ -181,7 +180,6 @@ class Inverter(Device, ABC):
         state_dictionary["load_va"] = self.load_va
         state_dictionary["load_percentage"] = self.load_percentage
         state_dictionary["battery_charge_current"] = self.battery_charge_current
-        state_dictionary["battery_discharge_current"] = self.battery_discharge_current
         state_dictionary["pv_charge_current"] = self.pv_charge_current
         state_dictionary["pv_input_voltage"] = self.pv_input_voltage
         state_dictionary["pv_input_power"] = self.pv_input_power
