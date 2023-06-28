@@ -4,6 +4,8 @@ from communication.connect_devices import run_devices
 from communication.attach_observers import attach_observers
 import logging
 import asyncio
+import signal
+import sys
 
 log = logging.getLogger("Daemon")
 
@@ -24,16 +26,21 @@ if __name__ == '__main__':
         log.error("No devices running!")
 
     else:
-        observer_tasks = attach_observers(running_devices, config)
+        observer_tasks, stop_functions = attach_observers(running_devices, config)
         asynchronous_tasks.extend(observer_tasks)
         asynchronous_tasks.extend([device.run() for device in running_devices.values()])
 
-        try:
-            loop.run_until_complete(asyncio.wait(asynchronous_tasks))
-        except KeyboardInterrupt:
-            log.info("Keyboard interrupt received, stopping devices...")
+        async def shutdown(signal_type):
+            # This functionality might benefit from some structure
+            log.info(f"Shutting down due to signal {signal_type}...")
             for device in running_devices.values():
                 device.stop()
-        finally:
-            # TODO: Still not sure why the loop doesn't close properly
-            loop.close()
+
+            for stop_function in stop_functions:
+                await stop_function()
+
+        # Add handling for signals
+        for signal_type in [signal.SIGINT, signal.SIGTERM, signal.SIGHUP]:
+            loop.add_signal_handler(signal_type, lambda: asyncio.ensure_future(shutdown(signal_type)))
+
+        loop.run_until_complete(asyncio.wait(asynchronous_tasks))

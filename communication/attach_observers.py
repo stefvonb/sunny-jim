@@ -4,6 +4,7 @@ import asyncio
 
 def attach_observers(devices: dict[str, Device], config: dict):
     async_tasks = []
+    stop_functions = []
 
     if "print_updates" in config and config["print_updates"]:
         [device.attach_observer(PrintObserver()) for device in devices.values()]
@@ -17,8 +18,9 @@ def attach_observers(devices: dict[str, Device], config: dict):
                                            config["websocket_streaming"]["port"], message_queue)
         [device.attach_observer(WebsocketObserver(device_id, message_queue)) for device_id, device in devices.items()]
         async_tasks.append(websocket_server.run_server())
+        stop_functions.append(websocket_server.stop)
 
-    return async_tasks
+    return async_tasks, stop_functions
 
 def attach_csv_file_logging_observer(device: Device, device_id: str, config: dict):
     device.attach_observer(CsvFileLoggingObserver(config["csv_data_logging"]["base_filepath"], device_id,

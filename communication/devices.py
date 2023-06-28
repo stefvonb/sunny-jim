@@ -75,19 +75,13 @@ class Device(abc.ABC):
         pass
 
     async def send_loop(self) -> None:
-        while True:
-            if self.running:
-                await self.send()
-            else:
-                return
+        while self.running:
+            await self.send()
 
     async def receive_loop(self) -> None:
-        while True:
-            if self.running:
-                await self.receive()
-                self.notify_observers()
-            else:
-                return
+        while self.running:
+            await self.receive()
+            self.notify_observers()
 
     async def run(self) -> None:
         self.running = True
@@ -168,8 +162,7 @@ class Inverter(Device, ABC):
         state_dictionary = super().get_state_dictionary()
         if any(e is None for e in [self.grid_voltage, self.grid_frequency, self.output_voltage, self.output_frequency,
                                    self.load_power, self.load_va, self.load_percentage, self.battery_charge_current,
-                                   self.battery_discharge_current, self.pv_charge_current, self.pv_input_voltage,
-                                   self.pv_input_power]):
+                                   self.pv_charge_current, self.pv_input_voltage, self.pv_input_power]):
             return None
 
         state_dictionary["grid_voltage"] = self.grid_voltage

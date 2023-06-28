@@ -71,6 +71,7 @@ class WebsocketServer:
         self.port = port
         self.connections = set()
         self.message_queue = shared_queue
+        self.running = True
 
     async def register_connection(self, websocket):
         self.connections.add(websocket)
@@ -83,10 +84,17 @@ class WebsocketServer:
     async def run_server(self):
         log.info(f"Starting websocket server at ws://{self.host}:{self.port}...")
         async with websockets.serve(self.register_connection, self.host, self.port):
-            while True:
+            while self.running:
                 message = await self.message_queue.get()
                 for connection in self.connections:
                     await connection.send(message)
+
+    async def stop(self):
+        for connection in list(self.connections):
+            await connection.close()
+
+        self.running = False
+        self.message_queue.put_nowait(None)
 
 
 class WebsocketObserver(DeviceObserver):
