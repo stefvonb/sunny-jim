@@ -2,10 +2,10 @@ import argparse
 import configuration
 from communication.connect_devices import run_devices
 from communication.attach_observers import attach_observers
+from communication.devices import CommandType
 import logging
 import asyncio
 import signal
-import sys
 
 log = logging.getLogger("Daemon")
 
@@ -21,6 +21,8 @@ if __name__ == '__main__':
 
     loop = asyncio.new_event_loop()
     running_devices = loop.run_until_complete(run_devices(config))
+
+    inverter = running_devices["kodak_ogx_548"]
 
     if len(running_devices) == 0:
         log.error("No devices running!")

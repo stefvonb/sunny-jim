@@ -25,6 +25,13 @@ class OutputMode(Enum):
     UNKNOWN = "unknown"
 
 
+class CommandType(Enum):
+    SWITCH_TO_LINE_MODE = "switch_to_line_mode"
+    SWITCH_TO_BATTERY_MODE = "switch_to_battery_mode"
+    TURN_ON_GRID_CHARGING = "turn_on_grid_charging"
+    TURN_OFF_GRID_CHARGING = "turn_off_grid_charging"
+
+
 class Device(abc.ABC):
     time_updated: float = 0
 
@@ -45,6 +52,7 @@ class Device(abc.ABC):
         self.device_id = device_id
         self.log = logging.getLogger(self.device_id)
         self._observers = []
+        self.async_lock = asyncio.Lock()
 
     async def connect(self) -> None:
         self.connected = await self.try_connect()
@@ -125,6 +133,19 @@ class Device(abc.ABC):
         except ValueError:
             pass
 
+    @abstractmethod
+    def get_available_commands(self) -> dict[CommandType, callable]:
+        pass
+
+    async def try_run_command(self, command: CommandType, *args: tuple) -> bool:
+        available_commands = self.get_available_commands()
+        if command not in available_commands:
+            self.log.error(f"{command.value} is not available for this device.")
+            return False
+
+        async with self.async_lock:
+            return await available_commands[command](*args)
+
 
 class Battery(Device, ABC):
     voltage: float = None
@@ -152,6 +173,9 @@ class Battery(Device, ABC):
             state_dictionary[f"temperature_{i+1}"] = temperature
 
         return state_dictionary
+
+    def get_available_commands(self) -> dict[CommandType, callable]:
+        return {}
 
 
 class Inverter(Device, ABC):
@@ -197,6 +221,28 @@ class Inverter(Device, ABC):
 
         return state_dictionary
 
+    
+    @abstractmethod
+    async def switch_to_line_mode(self) -> bool:
+        pass
+
+    @abstractmethod
+    async def switch_to_battery_mode(self) -> bool:
+        pass
+
+    @abstractmethod
+    async def turn_on_grid_charging(self) -> bool:
+        pass
+
+    @abstractmethod
+    async def turn_off_grid_charging(self) -> bool:
+        pass
+
+    def get_available_commands(self) -> dict[CommandType, callable]:
+        return {CommandType.SWITCH_TO_LINE_MODE: self.switch_to_line_mode,
+                CommandType.SWITCH_TO_BATTERY_MODE: self.switch_to_battery_mode,
+                CommandType.TURN_ON_GRID_CHARGING: self.turn_on_grid_charging,
+                CommandType.TURN_OFF_GRID_CHARGING: self.turn_off_grid_charging}
 
 class DeviceInitialisationError(Exception):
     pass
