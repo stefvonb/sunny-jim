@@ -6,8 +6,8 @@ import asyncio
 import logging
 import websockets
 import json
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy import inspect, Table, String, Column, Integer, Float, MetaData, insert
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import Table, String, Column, Integer, Float, MetaData, insert
 from sqlalchemy.schema import CreateTable
 
 log = logging.getLogger("Observers")

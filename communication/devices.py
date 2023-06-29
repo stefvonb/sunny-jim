@@ -14,6 +14,17 @@ class DeviceType(Enum):
     BATTERY = "battery"
 
 
+class OnOffState(Enum):
+    ON = "on"
+    OFF = "off"
+
+
+class OutputMode(Enum):
+    LINE = "line"
+    BATTERY = "battery"
+    UNKNOWN = "unknown"
+
+
 class Device(abc.ABC):
     time_updated: float = 0
 
@@ -152,9 +163,12 @@ class Inverter(Device, ABC):
     load_va: float = None
     load_percentage: float = None
     battery_charge_current: float = None
+    grid_charge_current: float = None
     pv_charge_current: float = None
     pv_input_voltage: float = None
     pv_input_power: float = None
+    grid_state: OnOffState = None
+    output_mode: OutputMode = None
 
     device_type: DeviceType = DeviceType.INVERTER
 
@@ -162,7 +176,8 @@ class Inverter(Device, ABC):
         state_dictionary = super().get_state_dictionary()
         if any(e is None for e in [self.grid_voltage, self.grid_frequency, self.output_voltage, self.output_frequency,
                                    self.load_power, self.load_va, self.load_percentage, self.battery_charge_current,
-                                   self.pv_charge_current, self.pv_input_voltage, self.pv_input_power]):
+                                   self.grid_charge_current, self.pv_charge_current, self.pv_input_voltage, 
+                                   self.pv_input_power, self.grid_state, self.output_mode]):
             return None
 
         state_dictionary["grid_voltage"] = self.grid_voltage
@@ -173,9 +188,12 @@ class Inverter(Device, ABC):
         state_dictionary["load_va"] = self.load_va
         state_dictionary["load_percentage"] = self.load_percentage
         state_dictionary["battery_charge_current"] = self.battery_charge_current
+        state_dictionary["grid_charge_current"] = self.grid_charge_current
         state_dictionary["pv_charge_current"] = self.pv_charge_current
         state_dictionary["pv_input_voltage"] = self.pv_input_voltage
         state_dictionary["pv_input_power"] = self.pv_input_power
+        state_dictionary["grid_state"] = self.grid_state.value
+        state_dictionary["output_mode"] = self.output_mode.value
 
         return state_dictionary
 
