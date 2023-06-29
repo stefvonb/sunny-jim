@@ -81,7 +81,7 @@ class Device(abc.ABC):
     async def receive_loop(self) -> None:
         while self.running:
             await self.receive()
-            self.notify_observers()
+            await self.notify_observers()
 
     async def run(self) -> None:
         self.running = True
@@ -99,10 +99,10 @@ class Device(abc.ABC):
         return {"device_id": self.device_id,
                 "device_type": self.device_type.value}
 
-    def notify_observers(self, modifier=None):
+    async def notify_observers(self, modifier=None):
         for observer in self._observers:
             if observer != modifier:
-                observer.update(self)
+                await observer.update(self)
 
     def attach_observer(self, observer: DeviceObserver):
         if observer not in self._observers:

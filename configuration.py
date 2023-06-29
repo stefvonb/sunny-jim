@@ -12,6 +12,8 @@ def configure_logging(config: dict):
     logging.getLogger('asyncio').setLevel(logging.WARNING)
     logging.getLogger('websockets.server').setLevel(logging.WARNING)
     logging.getLogger('websockets.protocol').setLevel(logging.WARNING)
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+    logging.getLogger('aiosqlite').setLevel(logging.WARNING)
 
     log_handler = RotatingFileHandler(
         config["application"]["logs"]["log_filename"],

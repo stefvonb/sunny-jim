@@ -12,6 +12,10 @@ def initialise_devices(config: dict) -> Dict[str, Device]:
     initialised_devices = {}
 
     for device_key, device_setup in config['devices'].items():
+        # We only want device IDs that have no spaces
+        if " " in device_key:
+            log.error(f"Device key '{device_key}' should not contain any spaces. Skipping...")
+            continue
         if device_key in initialised_devices:
             log.error(f"Duplicate device key found in config file: {device_key}")
             continue

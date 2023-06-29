@@ -6,17 +6,20 @@ import asyncio
 import logging
 import websockets
 import json
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy import inspect, Table, String, Column, Integer, Float, MetaData, insert
+from sqlalchemy.schema import CreateTable
 
 log = logging.getLogger("Observers")
 
 class DeviceObserver(abc.ABC):
     @abc.abstractmethod
-    def update(self, device):
+    async def update(self, device):
         pass
 
 
 class PrintObserver(DeviceObserver):
-    def update(self, device):
+    async def update(self, device):
         print(device.get_state_dictionary())
 
 
@@ -46,7 +49,7 @@ class CsvFileLoggingObserver(DeviceObserver):
         self.csv_writer = csv.DictWriter(self.current_file, fieldnames=file_headers)
         self.csv_writer.writeheader()
 
-    def update(self, device):
+    async def update(self, device):
         device_state = device.get_state_dictionary()
 
         if not device_state:
@@ -86,6 +89,8 @@ class WebsocketServer:
         async with websockets.serve(self.register_connection, self.host, self.port):
             while self.running:
                 message = await self.message_queue.get()
+                if message is None:
+                    continue
                 for connection in self.connections:
                     await connection.send(message)
 
@@ -102,7 +107,7 @@ class WebsocketObserver(DeviceObserver):
         self.device_id = device_id
         self.message_queue = shared_queue
 
-    def update(self, device):
+    async def update(self, device):
         device_info = device.get_information_dictionary()
         device_state = device.get_state_dictionary()
 
@@ -112,4 +117,82 @@ class WebsocketObserver(DeviceObserver):
         json_message = {"device_info": device_info, "device_state": device_state}
 
         message = json.dumps(json_message)
-        self.message_queue.put_nowait(message)
+        await self.message_queue.put(message)
+
+
+class SQLSession:
+    def __init__(self, sql_connection_string: str, shared_queue: asyncio.Queue):
+        self.engine = create_async_engine(sql_connection_string)
+        self.metadata = MetaData()
+        self.running = True
+        self.statement_queue = shared_queue
+        self.ready = [False]
+
+    async def run_session(self):
+        log.info(f"Starting SQL session with engine '{self.engine.name}'...")
+        async with self.engine.begin() as connection:
+            await connection.run_sync(self.metadata.create_all)
+            await connection.run_sync(self.metadata.reflect)
+
+            self.ready[0] = True
+
+        while self.running:
+            statement = await self.statement_queue.get()
+            if statement is None:
+                continue
+            async with self.engine.begin() as connection:
+                await connection.execute(statement)
+
+
+    async def stop(self):
+        self.running = False
+        self.statement_queue.put_nowait(None)
+
+
+class SQLDatabaseObserver(DeviceObserver):
+    def __init__(self, device_id: str, shared_queue: asyncio.Queue, sql_metadata: MetaData, ready: list[bool]):
+        self.device_id = device_id
+        self.table_name = f"device_{device_id}"
+        self.statement_queue = shared_queue
+        self.metadata = sql_metadata
+        self.table_exists = False
+        self.ready = ready
+
+
+    async def update(self, device):
+        # TODO Need to think about if I add additional columns
+        device_state = device.get_state_dictionary()
+
+        # We need to wait until the SQL session has been created before we can do anything
+        if not self.ready[0]:
+            return
+
+        if not self.table_exists:
+            table_names = self.metadata.tables.keys()
+            self.table_exists = self.table_name in table_names
+
+            if not self.table_exists:
+                log.info(f"Creating new table '{self.table_name}' in database...")
+                await self.statement_queue.put(self.new_table_expression(device_state))
+
+        table = self.metadata.tables[self.table_name]
+        insert_statement = insert(table).values(device_state)
+        await self.statement_queue.put(insert_statement)
+
+
+    def new_table_expression(self, state_dictionary):
+        type_mapping = {
+            str: String,
+            int: Integer,
+            float: Float,
+        }
+
+        table = Table(self.table_name, self.metadata)
+        table.append_column(Column("id", Integer, primary_key=True, autoincrement=True))
+
+        for key, value in state_dictionary.items():
+            column_type = type_mapping[type(value)]
+            table.append_column(Column(key, column_type))
+        
+        create_expression = CreateTable(table)
+        return create_expression

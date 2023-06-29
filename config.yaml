@@ -19,11 +19,15 @@ websocket_streaming:
   host: "0.0.0.0"
   port: 8765
 
+sql_database:
+  sql_type: "sqlite+aiosqlite"
+  database_name: "db.sqlite"
+
 devices:
-  Dyness A48100:
+  dyness_a48100:
     type: "DynessA48100Com"
     serial_port: "/dev/ttyUSB0"
 
-  Kodak OGX 5.48:
+  kodak_ogx_548:
     type: "KodakOGX548Inverter"
     serial_port: "/dev/ttyUSB1"
