@@ -9,15 +9,11 @@ import signal
 log = logging.getLogger("Device Daemon")
 
 class DeviceDaemon:
-    def __init__(self, config: dict, loop: asyncio.AbstractEventLoop, running_devices: dict = None):
+    def __init__(self, config: dict, loop: asyncio.AbstractEventLoop):
         self.config = config
         self.loop = loop
         self.stop_functions = []
-
-        if running_devices is None:
-            self.running_devices = {}
-        else:
-            self.running_devices = running_devices
+        self.running_devices = {}
 
     async def run(self):
         asynchronous_tasks = []

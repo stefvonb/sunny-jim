@@ -5,6 +5,10 @@ application:
     max_filesize: 5 # MB
     num_backups: 2
 
+web_interface:
+  host: "0.0.0.0"
+  port: 8000
+
 print_updates: false
 
 connections: # Settings for connecting devices

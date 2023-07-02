@@ -25,13 +25,15 @@ def configure_logging(config: dict):
     )
 
     console_handler = logging.StreamHandler()
+    console_handler.formatter = get_formatter()
 
     log_level = logging.DEBUG if config["application"]["debug"] else logging.INFO
     log_handler.setLevel(log_level)
 
     logging.basicConfig(
         level=log_level,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[log_handler, console_handler]
     )
+
+def get_formatter():
+    return logging.Formatter("%(asctime)s [%(name)s] %(levelname)s: %(message)s", "%Y-%m-%d %H:%M:%S")
