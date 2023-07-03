@@ -7,6 +7,7 @@ import uvicorn
 from fastapi import FastAPI
 import signal
 from web_interface import endpoints
+from data_management.data_interface import DataInterface
 
 
 if __name__ == '__main__':
@@ -31,6 +32,9 @@ if __name__ == '__main__':
     daemon_task = asyncio.ensure_future(daemon.run(), loop=loop)
 
     endpoints.register_device_endpoints(web_app, daemon)
+
+    data_interface = DataInterface.create_from_config(config)
+    endpoints.register_data_endpoints(web_app, data_interface, daemon)
 
     @web_app.on_event("shutdown")
     async def shutdown_event():

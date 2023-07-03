@@ -1,6 +1,7 @@
 from .devices import Device
 from .observers import CsvFileLoggingObserver, PrintObserver, WebsocketServer, WebsocketObserver, SQLDatabaseObserver, SQLSession
 import asyncio
+from data_management import sql_utilities
 
 def attach_observers(devices: dict[str, Device], config: dict):
     async_tasks = []
@@ -22,7 +23,7 @@ def attach_observers(devices: dict[str, Device], config: dict):
 
     if "sql_database" in config:
         sql_message_queue = asyncio.Queue()
-        connection_string = f'{config["sql_database"]["sql_type"]}:///{config["sql_database"]["database_name"]}'
+        connection_string = sql_utilities.get_sql_connection_string(config["sql_database"]["sql_driver"], config["sql_database"]["database_path"])
         sql_session = SQLSession(connection_string, sql_message_queue)
         [device.attach_observer(SQLDatabaseObserver(device_id, sql_message_queue, sql_session.metadata, sql_session.ready)) for device_id, device in devices.items()]
         async_tasks.append(sql_session.run_session())

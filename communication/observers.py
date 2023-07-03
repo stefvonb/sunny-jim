@@ -9,6 +9,7 @@ import json
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import Table, String, Column, Integer, Float, MetaData, insert
 from sqlalchemy.schema import CreateTable
+from data_management import sql_utilities
 
 log = logging.getLogger("Observers")
 
@@ -152,7 +153,7 @@ class SQLSession:
 class SQLDatabaseObserver(DeviceObserver):
     def __init__(self, device_id: str, shared_queue: asyncio.Queue, sql_metadata: MetaData, ready: list[bool]):
         self.device_id = device_id
-        self.table_name = f"device_{device_id}"
+        self.table_name = sql_utilities.get_table_name(device_id)
         self.statement_queue = shared_queue
         self.metadata = sql_metadata
         self.table_exists = False

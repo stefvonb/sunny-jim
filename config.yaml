@@ -6,7 +6,7 @@ application:
     num_backups: 2
 
 web_interface:
-  host: "0.0.0.0"
+  host: "192.168.0.109"
   port: 8000
 
 print_updates: false
@@ -15,17 +15,17 @@ connections: # Settings for connecting devices
   num_connection_tries: 5
   stall_time: 2 # seconds
 
-csv_data_logging:
-  base_filepath: "data"
-  lines_per_file: 50
+#csv_data_logging:
+#  base_filepath: "data"
+#  lines_per_file: 50
 
 websocket_streaming:
-  host: "0.0.0.0"
+  host: "192.168.0.109"
   port: 8765
 
 sql_database:
-  sql_type: "sqlite+aiosqlite"
-  database_name: "db.sqlite"
+  sql_driver: "sqlite+aiosqlite"
+  database_path: "db.sqlite"
 
 devices:
   dyness_a48100:
