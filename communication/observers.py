@@ -7,7 +7,7 @@ import logging
 import websockets
 import json
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import Table, String, Column, Integer, Float, MetaData, insert
+from sqlalchemy import Table, String, Column, Integer, Float, MetaData, insert, event
 from sqlalchemy.schema import CreateTable
 from data_management import sql_utilities
 
@@ -128,6 +128,14 @@ class SQLSession:
         self.running = True
         self.statement_queue = shared_queue
         self.ready = [False]
+
+        # This is quite janky, but let's see if it works
+        if "sqlite" in sql_connection_string:
+            @event.listens_for(self.engine.sync_engine, "connect")
+            def set_sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.close()
 
     async def run_session(self):
         log.info(f"Starting SQL session with engine '{self.engine.name}'...")

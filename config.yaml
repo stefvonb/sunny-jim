@@ -8,6 +8,8 @@ application:
 web_interface:
   host: "192.168.0.109"
   port: 8000
+  allowed_origins:
+    - "*"
 
 print_updates: false
 

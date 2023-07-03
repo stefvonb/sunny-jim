@@ -59,7 +59,7 @@ class SQLDataInterface(DataInterface):
             selection_columns = sql_utilities.get_selection_columns(columns)
 
             past_timestamp = time() - n * 60
-            query = text(f"SELECT {selection_columns} FROM {table_name} WHERE time_updated >= {past_timestamp} ORDER BY time_updated DESC")
+            query = text(f"SELECT {selection_columns} FROM {table_name} WHERE time_updated >= {past_timestamp} ORDER BY time_updated")
             result = await connection.execute(query)
             results_dictionary = sql_utilities.convert_cursor_result_to_dict(result)
             return results_dictionary

@@ -5,6 +5,7 @@ import argparse
 import configuration
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import signal
 from web_interface import endpoints
 from data_management.data_interface import DataInterface
@@ -35,6 +36,14 @@ if __name__ == '__main__':
 
     data_interface = DataInterface.create_from_config(config)
     endpoints.register_data_endpoints(web_app, data_interface, daemon)
+
+    web_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config["web_interface"]["allowed_origins"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @web_app.on_event("shutdown")
     async def shutdown_event():
