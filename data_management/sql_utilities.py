@@ -15,6 +15,9 @@ def convert_cursor_result_to_dict(result) -> list[dict]:
     all_results = result.fetchall()
     transposed_results = list(zip(*all_results))
 
+    if len(all_results) == 0:
+        return {}
+
     return_dict = {}
     for i, key in enumerate(result.keys()):
         return_dict[key] = transposed_results[i]

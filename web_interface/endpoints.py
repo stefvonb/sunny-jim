@@ -87,4 +87,9 @@ def register_data_endpoints(app: FastAPI, data_interface: DataInterface, daemon:
         if columns:
             columns = columns.split(",")
 
-        return await data_interface.get_last_n_minutes(device.device_id, minutes, columns)
+        result = await data_interface.get_last_n_minutes(device.device_id, minutes, columns)
+
+        if len(result) == 0:
+            raise HTTPException(status_code=404, detail=f"No data found for device {device_key}.")
+
+        return result
