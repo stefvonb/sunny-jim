@@ -171,6 +171,9 @@ class SQLDatabaseObserver(DeviceObserver):
     async def update(self, device):
         # TODO Need to think about if I add additional columns
         device_state = device.get_state_dictionary()
+        
+        if device_state == None:
+            log.warning(f"Device {self.device_id} did not fill its state dictionary")
 
         # We need to wait until the SQL session has been created before we can do anything
         if not self.ready[0]:

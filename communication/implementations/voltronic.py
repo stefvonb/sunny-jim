@@ -4,7 +4,7 @@ import serial
 import serial_asyncio
 
 import communication
-from communication.devices import Inverter, OutputMode, OnOffState, CommandType
+from communication.devices import Inverter, OutputMode, OnOffState, Charger
 import asyncio
 from communication.crc16 import crc16xmodem
 from enum import Enum
@@ -18,6 +18,16 @@ class VoltronicModes(Enum):
     FAULT_MODE = 5
     POWER_SAVING_MODE = 6
 
+class OutputPriority(Enum):
+    UTILITY_FIRST = 0
+    SOLAR_FIRST = 1
+    SBU_FIRST = 2
+
+class ChargerPriority(Enum):
+    UTILITY_FIRST = 0
+    SOLAR_FIRST = 1
+    SOLAR_AND_UTILITY = 2
+    SOLAR_ONLY = 3
 
 class KodakOGX548Inverter(Inverter):
     BAUD_RATE: int = 2400
@@ -32,6 +42,19 @@ class KodakOGX548Inverter(Inverter):
         "H": VoltronicModes.POWER_SAVING_MODE
     }
 
+    SELECTED_MODE_MAP = {
+        "0": OutputPriority.UTILITY_FIRST,
+        "1": OutputPriority.SOLAR_FIRST,
+        "2": OutputPriority.SBU_FIRST
+    }
+
+    SELECTED_CHARGER_MAP = {
+        "0": ChargerPriority.UTILITY_FIRST,
+        "1": ChargerPriority.SOLAR_FIRST,
+        "2": ChargerPriority.SOLAR_AND_UTILITY,
+        "3": ChargerPriority.SOLAR_ONLY
+    }
+
     MODE_BUCKET = {
         VoltronicModes.POWER_ON_MODE: OutputMode.UNKNOWN,
         VoltronicModes.STANDBY_MODE: OutputMode.UNKNOWN,
@@ -39,6 +62,19 @@ class KodakOGX548Inverter(Inverter):
         VoltronicModes.BATTERY_MODE: OutputMode.BATTERY,
         VoltronicModes.FAULT_MODE: OutputMode.UNKNOWN,
         VoltronicModes.POWER_SAVING_MODE: OutputMode.UNKNOWN
+    }
+
+    SELECTED_MODE_BUCKET = {
+        OutputPriority.UTILITY_FIRST: OutputMode.LINE,
+        OutputPriority.SOLAR_FIRST: OutputMode.BATTERY,
+        OutputPriority.SBU_FIRST: OutputMode.BATTERY
+    }
+
+    CHARGER_MODE_BUCKET = {
+        ChargerPriority.UTILITY_FIRST: Charger.GRID_AND_SOLAR,
+        ChargerPriority.SOLAR_FIRST: Charger.GRID_AND_SOLAR,
+        ChargerPriority.SOLAR_AND_UTILITY: Charger.GRID_AND_SOLAR,
+        ChargerPriority.SOLAR_ONLY: Charger.SOLAR
     }
 
     def __init__(self, device_id: str, **kwargs):
@@ -51,6 +87,7 @@ class KodakOGX548Inverter(Inverter):
         self.inverter = None
         self.QPIGS = self.generate_command("QPIGS")
         self.QMOD = self.generate_command("QMOD")
+        self.QPIRI = self.generate_command("QPIRI")
         self.POP00 = self.generate_command("POP00") # Sets to utility first
         self.POP02 = b'\x50\x4F\x50\x30\x32\xE2\x0B\x0D' # For some reason, the CRC doesn't work here
         self.PCP02 = self.generate_command("PCP02") # Sets charging from solar and utility
@@ -104,8 +141,14 @@ class KodakOGX548Inverter(Inverter):
             if len(qmod_response) == 0:
                 return None
 
+            self.inverter_writer.write(self.QPIRI)
+
+            qpiri_response = await self.inverter_reader.readuntil(b'\r')
+            if len(qpiri_response) == 0:
+                return None
+
             try:
-                decoded_state = self._decode_state(qpigs_response, qmod_response)
+                decoded_state = self._decode_state(qpigs_response, qmod_response, qpiri_response)
             except ValueError:
                 return None
 
@@ -124,10 +167,12 @@ class KodakOGX548Inverter(Inverter):
             self.pv_input_power = decoded_state['pv_input_power']
             self.output_mode = self.MODE_BUCKET[decoded_state['mode']]
             self.grid_state = OnOffState.ON if decoded_state['grid_ac_voltage'] > 0 else OnOffState.OFF
+            self.selected_mode = self.SELECTED_MODE_BUCKET[decoded_state['output_priority']]
+            self.selected_charger = self.CHARGER_MODE_BUCKET[decoded_state['charger_priority']] 
 
             await asyncio.sleep(self.POLL_TIME)
 
-    def _decode_state(self, qpigs_response: bytes, qmod_response: bytes) -> dict:
+    def _decode_state(self, qpigs_response: bytes, qmod_response: bytes, qpiri_response: bytes) -> dict:
         trimmed_qpigs_response = qpigs_response[1:]
         trimmed_qpigs_response = trimmed_qpigs_response[:-3]
         response_qpigs_ascii = trimmed_qpigs_response.decode('ascii')
@@ -137,6 +182,14 @@ class KodakOGX548Inverter(Inverter):
         trimmed_qmod_response = trimmed_qmod_response[:-3]
         response_qmod_ascii = trimmed_qmod_response.decode('ascii')
         mode = self.MODE_MAP[response_qmod_ascii]
+
+        trimmed_qpiri_response = qpiri_response[1:]
+        trimmed_qpiri_response = trimmed_qpiri_response[:-3]
+        response_qpiri_ascii = trimmed_qpiri_response.decode('ascii')
+        response_qpiri_parts = response_qpiri_ascii.split(" ")
+
+        output_priority = self.SELECTED_MODE_MAP[response_qpiri_parts[16]]
+        charger_priority = self.SELECTED_CHARGER_MAP[response_qpiri_parts[17]]
 
         return {
             'grid_ac_voltage': float(response_qpigs_parts[0]),
@@ -153,6 +206,8 @@ class KodakOGX548Inverter(Inverter):
             'pv_voltage': float(response_qpigs_parts[13]),
             'pv_input_power': float(response_qpigs_parts[19]),
             'mode': mode,
+            'output_priority': output_priority,
+            'charger_priority': charger_priority
         }
 
 
