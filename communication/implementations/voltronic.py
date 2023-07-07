@@ -31,7 +31,7 @@ class ChargerPriority(Enum):
 
 class KodakOGX548Inverter(Inverter):
     BAUD_RATE: int = 2400
-    POLL_TIME: int = 0.5
+    POLL_TIME: int = 0.1
 
     MODE_MAP = {
         "P": VoltronicModes.POWER_ON_MODE,
