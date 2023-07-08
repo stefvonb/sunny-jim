@@ -1,4 +1,7 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi.requests import Request
 from device_daemon import DeviceDaemon
 from communication.devices import DeviceType, CommandType
 from data_management.data_interface import DataInterface
@@ -93,3 +96,16 @@ def register_data_endpoints(app: FastAPI, data_interface: DataInterface, daemon:
             raise HTTPException(status_code=404, detail=f"No data found for device {device_key}.")
 
         return result
+
+
+def register_template_endpoints(app: FastAPI, templates: Jinja2Templates, config: dict):
+    @app.get("/", response_class=HTMLResponse)
+    async def get_homepage(request: Request):
+        context = {
+            "request": request,
+            "api_host": config["web_interface"]["host"],
+            "api_port": config["web_interface"]["port"],
+            "websocket_host": config["websocket_streaming"]["host"],
+            "websocket_port": config["websocket_streaming"]["port"],
+        }
+        return templates.TemplateResponse("homepage.html", context)

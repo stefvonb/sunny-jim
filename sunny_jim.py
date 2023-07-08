@@ -6,6 +6,8 @@ import configuration
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import signal
 from web_interface import endpoints
 from data_management.data_interface import DataInterface
@@ -31,6 +33,10 @@ if __name__ == '__main__':
 
     daemon = device_daemon.DeviceDaemon(config, loop)
     daemon_task = asyncio.ensure_future(daemon.run(), loop=loop)
+
+    web_app.mount("/static", StaticFiles(directory="web_interface/static"), name="static")
+    templates = Jinja2Templates(directory="web_interface/templates")
+    endpoints.register_template_endpoints(web_app, templates, config)
 
     endpoints.register_device_endpoints(web_app, daemon)
 

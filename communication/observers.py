@@ -87,7 +87,7 @@ class WebsocketServer:
 
     async def run_server(self):
         log.info(f"Starting websocket server at ws://{self.host}:{self.port}...")
-        async with websockets.serve(self.register_connection, self.host, self.port):
+        async with websockets.serve(self.register_connection, self.host, self.port, ping_interval=None):
             while self.running:
                 message = await self.message_queue.get()
                 if message is None:
