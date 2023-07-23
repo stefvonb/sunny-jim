@@ -27,7 +27,7 @@ websocket_streaming:
 
 sql_database:
   sql_driver: "sqlite+aiosqlite"
-  database_path: "db.sqlite"
+  database_path: "database/db.sqlite"
 
 devices:
   dyness_a48100:

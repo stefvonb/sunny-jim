@@ -15,8 +15,7 @@ def attach_observers(devices: dict[str, Device], config: dict):
 
     if "websocket_streaming" in config:
         websocket_message_queue = asyncio.Queue()
-        websocket_server = WebsocketServer(config["websocket_streaming"]["host"],
-                                           config["websocket_streaming"]["port"], websocket_message_queue)
+        websocket_server = WebsocketServer("0.0.0.0", config["websocket_streaming"]["port"], websocket_message_queue)
         [device.attach_observer(WebsocketObserver(device_id, websocket_message_queue)) for device_id, device in devices.items()]
         async_tasks.append(websocket_server.run_server())
         stop_functions.append(websocket_server.stop)

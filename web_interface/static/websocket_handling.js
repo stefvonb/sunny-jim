@@ -1,3 +1,5 @@
+var gridState = "off";
+
 function startWebsocketListener(server, port) {
   window.addEventListener("DOMContentLoaded", () => {
     const websocket = new WebSocket(`ws://${server}:${port}/`);
@@ -19,6 +21,16 @@ function startWebsocketListener(server, port) {
           grid_status.classList.add("bg-danger");
         }
         grid_status.innerHTML = device_state.grid_state.toUpperCase();
+
+        const gridOffSince = document.getElementById("grid-off-since");
+        if (gridState == 'on' && device_state.grid_state == 'off') {
+          const timeLastOn = new Date();
+          const timeLastOnTime = timeLastOn.toLocaleTimeString();
+          gridOffSince.innerHTML = `(since ${timeLastOnTime})`;
+        } else if (gridState == 'off' && device_state.grid_state == 'on') {
+          gridOffSince.innerHTML = '';
+        }
+        gridState = device_state.grid_state;
 
         // Update the output-mode span
         const output_mode = document.getElementById("output-mode");

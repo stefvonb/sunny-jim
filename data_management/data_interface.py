@@ -39,6 +39,10 @@ class DataInterface(ABC):
     async def get_last_n_hours(self, device_id: str, n: int, columns: list[str] = None):
         return await self.get_last_n_minutes(device_id, n * 60, columns)
 
+    @abstractmethod
+    async def get_when_grid_last_on(self):
+        pass
+
 class SQLDataInterface(DataInterface):
     def __init__(self, sql_connection_string: str):
         self.engine = create_async_engine(sql_connection_string)
@@ -62,4 +66,13 @@ class SQLDataInterface(DataInterface):
             query = text(f"SELECT {selection_columns} FROM {table_name} WHERE time_updated >= {past_timestamp} ORDER BY time_updated")
             result = await connection.execute(query)
             results_dictionary = sql_utilities.convert_cursor_result_to_dict(result)
+            return results_dictionary
+
+    async def get_when_grid_last_on(self, device_id: str):
+        async with self.engine.connect() as connection:
+            table_name = sql_utilities.get_table_name(device_id)
+
+            query = text(f"SELECT time_updated FROM {table_name} WHERE grid_state = 'on' ORDER BY time_updated DESC LIMIT 1")
+            result = await connection.execute(query)
+            results_dictionary = {'time_grid_last_on': result.first()[0]}
             return results_dictionary

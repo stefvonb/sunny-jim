@@ -1,9 +1,13 @@
-async function getData(api_server, api_port, api_endpoint, api_params) {
+async function getData(api_server, api_port, api_endpoint, api_params = null) {
     const num_tries = 3;
     var response = null;
+    var endpoint = `http://${api_server}:${api_port}/${api_endpoint}`;
+    if (api_params) {
+        endpoint += `?${api_params}`;
+    }
     for (var i = 0; i < num_tries; i++) {
         try {
-            response = await fetch(`http://${api_server}:${api_port}/${api_endpoint}?${api_params}`);
+            response = await fetch(endpoint);
             if (response.ok) {
                 break;
             }
@@ -110,5 +114,16 @@ async function setUpPlots(api_server, api_port, minutes) {
         colorway: lux_colorway,
         showlegend: true
     }, plotConfig);
+}
 
+async function setUpElements(api_server, api_port) {
+    const currentInverterData = await getData(api_server, api_port, "devices/inverter/");
+    
+    if (currentInverterData.device_state.grid_state == 'off') {
+        const timeLastOn = await getData(api_server, api_port, "data/time_when_grid_last_on/")
+        const timeLastOnDate = new Date(timeLastOn.time_grid_last_on * 1000);
+        const timeLastOnTime = timeLastOnDate.toLocaleTimeString();
+
+        document.getElementById('grid-off-since').innerHTML = `(since ${timeLastOnTime})`;
+    }
 }

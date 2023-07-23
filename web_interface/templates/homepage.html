@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sunny Jim | Dashboard</title>
+  <link type="image/png" sizes="32x32" rel="icon" href="static/favicon.png">
   <!-- Bootstrap CSS -->
   <link href="static/bootstrap.min.css" rel="stylesheet">
   <!-- Start the websocket -->
@@ -28,7 +29,7 @@
 
     <div class="row">
       <div class="col-sm-3">
-        <p>Grid Status: <span class="badge" id="grid-status"></span></p>
+        <p>Grid Status: <span class="badge" id="grid-status"></span><span id="grid-off-since"></span></p>
       </div>
       <div class="col-sm-3">
         <p>Output Mode: <span class="badge" id="output-mode"></span></p>
@@ -189,8 +190,9 @@
   <script src="static/button_functions.js"></script>
   <!-- Plotly JS -->
   <script src="static/plotly-2.24.1.min.js" charset="utf-8"></script>
-  <script src="static/plotting.js"></script>
+  <script src="static/set_up_functions.js"></script>
   <script>setUpPlots('{{ api_host }}', '{{ api_port }}', 30);</script>
+  <script>setUpElements('{{ api_host }}', '{{ api_port }}');</script>
 </body>
 
 </html>

@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     loop = asyncio.new_event_loop()
 
-    uvicorn_config = uvicorn.Config(app=web_app, port=config["web_interface"]["port"], log_level="info", host=config["web_interface"]["host"], loop=loop)
+    uvicorn_config = uvicorn.Config(app=web_app, port=config["web_interface"]["port"], log_level="info", host="0.0.0.0", loop=loop)
     uvicorn_server = uvicorn.Server(config=uvicorn_config)
     server_task = asyncio.ensure_future(uvicorn_server.serve(), loop=loop)
 

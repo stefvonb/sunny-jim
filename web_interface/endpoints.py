@@ -97,6 +97,17 @@ def register_data_endpoints(app: FastAPI, data_interface: DataInterface, daemon:
 
         return result
 
+    @app.get("/data/time_when_grid_last_on/")
+    async def get_time_when_grid_last_on():
+        device = inverter_candidate(daemon)
+
+        result = await data_interface.get_when_grid_last_on(device.device_id)
+
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"No data found for device {device.device_id}.")
+        
+        return result
+
 
 def register_template_endpoints(app: FastAPI, templates: Jinja2Templates, config: dict):
     @app.get("/", response_class=HTMLResponse)
