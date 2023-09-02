@@ -31,6 +31,10 @@ class MockBattery(Battery):
             raise communication.devices.DeviceInitialisationError(f"Missing field: {key_error}")
 
         self.UPDATE_INTERVAL = 1
+        self.charge_direction = -1
+        self.low_soc = 0.1
+        self.high_soc = 0.6
+        self.state_of_charge = self.soc_value
 
     async def try_connect(self) -> bool:
         return True
@@ -43,11 +47,16 @@ class MockBattery(Battery):
         self.time_updated = time.time()
         self.voltage = random_one_percent(self.voltage_value)
         self.current = random_one_percent(self.current_value)
-        self.state_of_charge = random_one_percent(self.soc_value)
+        self.state_of_charge = self.state_of_charge + 0.01 * self.charge_direction
         self.state_of_health = self.soh_value
         self.cell_voltages = [random_one_percent(self.cell_voltage_value) for _ in
                               range(self.num_cells)]
         self.temperatures = [random_one_percent(self.temperature_value)]
+
+        if self.state_of_charge <= self.low_soc:
+            self.charge_direction = 1
+        elif self.state_of_charge >= self.high_soc:
+            self.charge_direction = -1
 
     async def send(self):
         # Do nothing
@@ -85,9 +94,9 @@ class MockInverter(Inverter):
 
     async def send(self) -> None:
         # Using this as a mechanism to change the grid state
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
         self.grid_state = OnOffState.OFF
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
         self.grid_state = OnOffState.ON
 
     async def receive(self) -> None:

@@ -8,6 +8,7 @@ application:
 web_interface:
   host: "localhost"
   port: 8000
+  protocol: "http"
   allowed_origins:
     - "*"
 
@@ -25,12 +26,20 @@ sql_database:
   sql_driver: "sqlite+aiosqlite"
   database_path: "/sunny_jim.db"
 
+notifications:
+  host: "http://192.168.0.102:9080"
+  topic: "sunny_jim"
+  grid_change_notifications: true
+  low_battery_notifications: true
+  low_battery_level_percentage: 25
+  switch_action: "/devices/control/inverter/SWITCH_TO_LINE_MODE/"
+
 devices:
   MockBattery:
     type: "MockBattery"
     voltage_value: 48.0
     current_value: 7.5
-    soc_value: 0.8
+    soc_value: 0.4
     soh_value: 0.95
     cell_voltage_value: 3.5
     temperature_value: 18

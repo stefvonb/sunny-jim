@@ -4,12 +4,15 @@ import datetime
 import os
 import asyncio
 import logging
+from abc import ABC
+
 import websockets
 import json
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import Table, String, Column, Integer, Float, MetaData, insert, event
 from sqlalchemy.schema import CreateTable
 from data_management import sql_utilities
+import aiohttp
 
 log = logging.getLogger("Observers")
 
@@ -175,7 +178,7 @@ class SQLDatabaseObserver(DeviceObserver):
         # TODO Need to think about if I add additional columns
         device_state = device.get_state_dictionary()
         
-        if device_state == None:
+        if device_state is None:
             log.warning(f"Device {self.device_id} did not fill its state dictionary")
 
         # We need to wait until the SQL session has been created before we can do anything
@@ -211,3 +214,74 @@ class SQLDatabaseObserver(DeviceObserver):
         
         create_expression = CreateTable(table)
         return create_expression
+
+
+class NotificationObserver(DeviceObserver, ABC):
+    def __init__(self, device_id: str, webhook_endpoint: str, icon_url: str = None):
+        self.device_id = device_id
+        self.webhook_endpoint = webhook_endpoint
+        self.icon_url = icon_url
+        self.persisted_state = None
+
+    async def try_send_notification(self, title: str, message: str, action: str = None) -> bool:
+        headers = {"Title": title}
+        if action:
+            headers["Action"] = action
+        if self.icon_url:
+            headers["Icon"] = self.icon_url
+        async with (aiohttp.ClientSession() as session):
+            async with session.post(self.webhook_endpoint, data=message, headers=headers) as response:
+                if response.status != 200:
+                    response_text = await response.text()
+                    log.warning(f"Failed to send notification for {self.device_id}: {response_text}")
+                    return False
+
+                return True
+
+    def state_changed(self, new_state) -> bool:
+        if self.persisted_state is None:
+            self.persisted_state = new_state
+            return False
+
+        return new_state != self.persisted_state
+
+
+class GridChangeNotificationObserver(NotificationObserver):
+    NOTIFICATION_TITLE = "Grid Update"
+
+    def __init__(self, device_id: str, webhook_endpoint: str, icon_url: str = None):
+        super().__init__(device_id, webhook_endpoint, icon_url)
+
+    async def update(self, device):
+        device_state = device.get_state_dictionary()
+        grid_state = device_state["grid_state"]
+
+        if self.state_changed(grid_state):
+            await self.try_send_notification(self.NOTIFICATION_TITLE, f"The grid is now {grid_state}")
+
+        self.persisted_state = grid_state
+
+
+class LowBatteryNotificationObserver(NotificationObserver):
+    NOTIFICATION_TITLE = "Low Battery"
+
+    def __init__(self, device_id: str, webhook_endpoint: str, low_battery_level: int, switch_action: str = None, icon_url: str = None):
+        super().__init__(device_id, webhook_endpoint, icon_url)
+        self.low_battery_level = low_battery_level
+        self.notification_sent = False
+        self.switch_action = switch_action
+
+    async def update(self, device):
+        device_state = device.get_state_dictionary()
+        soc = int(device_state["state_of_charge"] * 100)
+
+        if self.state_changed(soc) and soc <= self.low_battery_level and not self.notification_sent:
+            success = await self.try_send_notification(self.NOTIFICATION_TITLE, f"The battery is now at {soc}%",
+                                                       self.switch_action)
+            if success:
+                self.notification_sent = True
+
+        if soc > self.low_battery_level:
+            self.notification_sent = False
+
+        self.persisted_state = soc
