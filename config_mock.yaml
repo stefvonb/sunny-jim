@@ -5,11 +5,25 @@ application:
     max_filesize: 5 # MB
     num_backups: 2
 
+web_interface:
+  host: "localhost"
+  port: 8000
+  allowed_origins:
+    - "*"
+
 print_updates: true
 
 connections: # Settings for connecting devices
   num_connection_tries: 5
   stall_time: 2 # seconds
+
+websocket_streaming:
+  host: "localhost"
+  port: 8765
+
+sql_database:
+  sql_driver: "sqlite+aiosqlite"
+  database_path: "/sunny_jim.db"
 
 devices:
   Mock Battery:
