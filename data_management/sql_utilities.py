@@ -2,6 +2,14 @@ def get_table_name(device_id: str):
     return f"device_{device_id}"
 
 
+def get_summary_name(device_id: str):
+    return f"summary_{device_id}"
+
+
+def get_view_name(device_id: str):
+    return f"view_{device_id}"
+
+
 def get_sql_connection_string(sql_driver: str, database_path: str):
     return f'{sql_driver}://{database_path}'
 

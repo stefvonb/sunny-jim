@@ -168,9 +168,13 @@ class SQLDatabaseObserver(DeviceObserver):
     def __init__(self, device_id: str, shared_queue: asyncio.Queue, sql_metadata: MetaData, ready: list[bool]):
         self.device_id = device_id
         self.table_name = sql_utilities.get_table_name(device_id)
+        self.summary_name = sql_utilities.get_summary_name(device_id)
+        self.view_name = sql_utilities.get_view_name(device_id)
         self.statement_queue = shared_queue
         self.metadata = sql_metadata
         self.table_exists = False
+        self.summary_exists = False
+        self.view_exists = False
         self.ready = ready
 
     async def update(self, device):
@@ -184,31 +188,42 @@ class SQLDatabaseObserver(DeviceObserver):
         if not self.ready[0]:
             return
 
+        table_names = self.metadata.tables.keys()
         if not self.table_exists:
-            table_names = self.metadata.tables.keys()
             self.table_exists = self.table_name in table_names
 
             if not self.table_exists:
                 log.info(f"Creating new table '{self.table_name}' in database...")
-                await self.statement_queue.put(self.new_table_expression(device_state))
+                await self.statement_queue.put(self.new_table_expression(self.table_name, device_state))
+
+        if not self.summary_exists:
+            self.summary_exists = self.summary_name in table_names
+
+            if not self.summary_exists:
+                log.info(f"Creating new summary table '{self.summary_name}' in database...")
+                await self.statement_queue.put(self.new_table_expression(self.summary_name, device_state, True))
 
         table = self.metadata.tables[self.table_name]
         insert_statement = insert(table).values(device_state)
         await self.statement_queue.put(insert_statement)
 
-    def new_table_expression(self, state_dictionary):
+    def new_table_expression(self, table_name, state_dictionary, add_standard_deviation_columns: bool = False):
         type_mapping = {
             str: String,
             int: Integer,
             float: Float,
         }
 
-        table = Table(self.table_name, self.metadata)
+        table = Table(table_name, self.metadata)
         table.append_column(Column("id", Integer, primary_key=True, autoincrement=True))
 
         for key, value in state_dictionary.items():
-            column_type = type_mapping[type(value)]
+            column_python_type = type(value)
+            column_type = type_mapping[column_python_type]
             table.append_column(Column(key, column_type))
+
+            if add_standard_deviation_columns and column_python_type == float and key != "time_updated":
+                table.append_column(Column(f"{key}_stdev", column_type))
 
         create_expression = CreateTable(table)
         return create_expression

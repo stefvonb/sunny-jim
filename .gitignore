@@ -138,4 +138,4 @@ data/
 build_for_docker.sh
 
 # Custom stuff
-sunny_jim.db
+sunny_jim.db*

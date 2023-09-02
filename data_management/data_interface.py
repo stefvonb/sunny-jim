@@ -96,24 +96,36 @@ class SQLDataInterface(DataInterface):
             outer_sql = "select main_group.leading_minute as time_updated"
             averaging_sql = "select CEIL(time_updated / 60) * 60 as leading_minute"
             most_recent_sql = "select ceil(time_updated/ 60) * 60 as leading_minute, row_number() over(partition by FLOOR(time_updated / 60) * 60 order by time_updated desc) as row_num"
+            ordered_columns = ["time_updated"]
 
             for column in metadata.tables[table_name].columns:
-                if column.name in ("time_updated", "id"):
+                if column.name in ("id", "time_updated"):
                     continue
 
                 if column.type.python_type == str:
                     outer_sql += f", outer_group.{column.name} as {column.name}"
+                    ordered_columns.append(column.name)
                     most_recent_sql += f", {column.name}"
 
                 elif column.type.python_type == float:
                     outer_sql += f", main_group.{column.name} as {column.name}, main_group.{column.name}_stdev as {column.name}_stdev"
+                    ordered_columns.append(column.name)
+                    ordered_columns.append(f"{column.name}_stdev")
                     averaging_sql += f", avg({column.name}) as {column.name}, stdev({column.name}) as {column.name}_stdev"
 
-            full_query = (f"{outer_sql} from ({averaging_sql} from {table_name} where time_updated <= {cutoff_timestamp} "
+            summary_name = sql_utilities.get_summary_name(device_id)
+            ordered_columns_string = ", ".join(ordered_columns)
+            full_query = (f"insert into {summary_name} ({ordered_columns_string}) {outer_sql} from ({averaging_sql} from {table_name} where time_updated <= {cutoff_timestamp} "
                           f"group by FLOOR(time_updated / 60) * 60) as main_group inner join "
                           f"(select * from ({most_recent_sql} from {table_name} WHERE time_updated <= {cutoff_timestamp}) "
                           f"inner_group where inner_group.row_num = 1) outer_group on "
                           f"main_group.leading_minute = outer_group.leading_minute "
                           f"order by time_updated;")
 
-            return {"sql": full_query}
+            await connection.execute(text(full_query))
+
+            # Drop all the summarised data from the main table
+            deletion_query = f"DELETE FROM {table_name} WHERE time_updated <= {cutoff_timestamp}"
+            await connection.execute(text(deletion_query))
+
+            return {"success": True}
