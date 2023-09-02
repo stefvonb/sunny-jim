@@ -122,7 +122,7 @@ async function setUpElements(api_server, api_port) {
     if (currentInverterData.device_state.grid_state == 'off') {
         const timeLastOn = await getData(api_server, api_port, "data/time_when_grid_last_on/")
         const timeLastOnDate = new Date(timeLastOn.time_grid_last_on * 1000);
-        const timeLastOnTime = timeLastOnDate.toLocaleTimeString();
+        const timeLastOnTime = timeLastOnDate.getHours().toString().padStart(2, '0') + ':' + timeLastOnDate.getMinutes().toString().padStart(2, '0');
 
         document.getElementById('grid-off-since').innerHTML = `(since ${timeLastOnTime})`;
     }

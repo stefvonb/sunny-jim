@@ -25,7 +25,7 @@ function startWebsocketListener(server, port) {
         const gridOffSince = document.getElementById("grid-off-since");
         if (gridState == 'on' && device_state.grid_state == 'off') {
           const timeLastOn = new Date();
-          const timeLastOnTime = timeLastOn.toLocaleTimeString();
+          const timeLastOnTime = timeLastOn.getHours().toString().padStart(2, '0') + ":" + timeLastOn.getMinutes().toString().padStart(2, '0');
           gridOffSince.innerHTML = `(since ${timeLastOnTime})`;
         } else if (gridState == 'off' && device_state.grid_state == 'on') {
           gridOffSince.innerHTML = '';
