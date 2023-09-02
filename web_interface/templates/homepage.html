@@ -2,197 +2,236 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sunny Jim | Dashboard</title>
-  <link type="image/png" sizes="32x32" rel="icon" href="static/favicon.png">
-  <!-- Bootstrap CSS -->
-  <link href="static/bootstrap.min.css" rel="stylesheet">
-  <!-- Start the websocket -->
-  <script src="static/websocket_handling.js"></script>
-  <script>startWebsocketListener('{{ websocket_host }}', '{{ websocket_port }}');</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sunny Jim | Dashboard</title>
+    <link type="image/png" sizes="32x32" rel="icon" href="static/favicon.png">
+    <!-- Bootstrap CSS -->
+    <link href="static/bootstrap.min.css" rel="stylesheet">
+    <!-- Start the websocket -->
+    <script src="static/websocket_handling.js"></script>
+    <script>startWebsocketListener('{{ websocket_host }}', '{{ websocket_port }}');</script>
 </head>
 
 <body>
-  <div class="container">
+<div class="container">
     <div class="row">
-      <div class="col-lg-6">
-        <h1 class="mt-4">Sunny Jim</h1>
-      </div>
-    </div>
-
-    <hr>
-
-    <div>
-      <h3 class="mt-4">System Status</h3>
-    </div>
-
-    <div class="row">
-      <div class="col-sm-3">
-        <p>Grid Status: <span class="badge" id="grid-status"></span> <span id="grid-off-since" class="text-body-tertiary"></span></p>
-      </div>
-      <div class="col-sm-3">
-        <p>Output Mode: <span class="badge" id="output-mode"></span></p>
-      </div>
-      <div class="col-sm-3">
-        <p>Output Voltage: <span class="badge bg-dark" id="output-voltage"></span></p>
-      </div>
-      <div class="col-sm-3">
-        <p>Output Frequency: <span class="badge bg-dark" id="output-frequency"></span></p>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-3 py-2">
-        <div class="card bg-secondary mb-3" style="max-width: 20rem;">
-          <div class="card-body">
-            <h4 class="card-title">SOC</h4>
-            <p class="h1" style="text-align: right;"><span id="battery-soc" class="card-text">-</span></p>
-          </div>
+        <div class="col-lg-6">
+            <h1 class="mt-4">Sunny Jim</h1>
         </div>
-        <div class="progress">
-          <div id="battery-soc-progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-3 py-2">
-        <div class="card bg-secondary mb-3" style="max-width: 20rem;">
-          <div class="card-body">
-            <h4 class="card-title">PV Input</h4>
-            <p class="h1" style="text-align: right;"><span id="pv-input" class="card-text">-</span></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-3 py-2">
-        <div class="card bg-secondary mb-3" style="max-width: 20rem;">
-          <div class="card-body">
-            <h4 class="card-title">Load</h4>
-            <p class="h1" style="text-align: right;"><span id="load-power" class="card-text">-</span></p>
-          </div>
-        </div>
-        <div class="progress">
-          <div id="load-power-progress-bar" class="progress-bar" role="progressbar" style="width: 0%;">
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-3 py-2">
-        <div class="card bg-secondary mb-3" style="max-width: 20rem;">
-          <div class="card-body">
-            <h4 class="card-title">Charge Current</h4>
-            <p class="h1" style="text-align: right;"><span id="battery-charge-current" class="card-text">-</span></p>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <hr>
+    <!-- Nav tabs -->
+    <ul id="allTabs" class="nav nav-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link active" data-bs-toggle="tab" href="#dashboard" aria-selected="true"
+               role="tab">Dashboard</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" data-bs-toggle="tab" href="#daily-usage" aria-selected="false" role="tab" tabindex="-1">Daily
+                Usage</a>
+        </li>
+    </ul>
 
-    <div>
-      <h3 class="mt-4">Settings</h3>
-    </div>
-
-    <div>
-      <p class="text-muted" id="control-update">No changes made.</p>
-    </div>
-
-    <div class="col-sm-3">
-      <p>Selected Mode: <span class="badge" id="selected-mode"></span></p>
-    </div>
-    <div class="col-sm-3">
-      <p>Selected Charger: <span class="badge" id="selected-charger"></span></p>
-    </div>
-
-    <div class="row mt-4">
-      <div class="col-sm-3 py-2">
-        <button id="line-mode-btn" class="btn btn-primary btn-block"
-          onclick="switch_to_line_mode('{{ api_host }}', '{{ api_port }}')">Line Mode</button>
-      </div>
-      <div class="col-sm-3 py-2">
-        <button id="battery-mode-btn" class="btn btn-primary btn-block"
-          onclick="switch_to_battery_mode('{{ api_host }}', '{{ api_port }}')">Battery Mode</button>
-      </div>
-      <div class="col-sm-3 py-2">
-        <button id="charge-grid-btn" class="btn btn-primary btn-block" data-toggle="modal"
-          data-target="#charge-current-modal">Charge From
-          Grid</button>
-      </div>
-      <div class="col-sm-3 py-2">
-        <button id="turn-off-grid-btn" class="btn btn-primary btn-block"
-          onclick="turn_off_grid_charging('{{ api_host }}', '{{ api_port }}')">Turn Off Grid Charging</button>
-      </div>
-    </div>
-
-    <div class="modal" id="charge-current-modal">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Grid charging</h5>
-            <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true"></span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label class="form-label mt-4" for="charge-current-value">What current would you like to charge
-                at?</label>
-              <input type="number" value="30" class="form-control" id="charge-current-value">
+    <div id="tabContent" class="tab-content">
+        <div class="tab-pane fade active show" id="dashboard" role="tabpanel">
+            <div>
+                <h3 class="mt-4">System Status</h3>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-dismiss="modal"
-              onclick="turn_on_grid_charging('{{ api_host }}', '{{ api_port }}')">Turn On</button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          </div>
+
+            <div class="row">
+                <div class="col-sm-3">
+                    <p>Grid Status: <span class="badge" id="grid-status"></span> <span id="grid-off-since"
+                                                                                       class="text-body-tertiary"></span>
+                    </p>
+                </div>
+                <div class="col-sm-3">
+                    <p>Output Mode: <span class="badge" id="output-mode"></span></p>
+                </div>
+                <div class="col-sm-3">
+                    <p>Output Voltage: <span class="badge bg-dark" id="output-voltage"></span></p>
+                </div>
+                <div class="col-sm-3">
+                    <p>Output Frequency: <span class="badge bg-dark" id="output-frequency"></span></p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 py-2">
+                    <div class="card bg-secondary mb-3" style="max-width: 20rem;">
+                        <div class="card-body">
+                            <h4 class="card-title">SOC</h4>
+                            <p class="h1" style="text-align: right;"><span id="battery-soc" class="card-text">-</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="progress">
+                        <div id="battery-soc-progress-bar" class="progress-bar bg-success" role="progressbar"
+                             style="width: 0%;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 py-2">
+                    <div class="card bg-secondary mb-3" style="max-width: 20rem;">
+                        <div class="card-body">
+                            <h4 class="card-title">PV Input</h4>
+                            <p class="h1" style="text-align: right;"><span id="pv-input" class="card-text">-</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 py-2">
+                    <div class="card bg-secondary mb-3" style="max-width: 20rem;">
+                        <div class="card-body">
+                            <h4 class="card-title">Load</h4>
+                            <p class="h1" style="text-align: right;"><span id="load-power" class="card-text">-</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="progress">
+                        <div id="load-power-progress-bar" class="progress-bar" role="progressbar" style="width: 0%;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 py-2">
+                    <div class="card bg-secondary mb-3" style="max-width: 20rem;">
+                        <div class="card-body">
+                            <h4 class="card-title">Charge Current</h4>
+                            <p class="h1" style="text-align: right;"><span id="battery-charge-current"
+                                                                           class="card-text">-</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div>
+                <h3 class="mt-4">Settings</h3>
+            </div>
+
+            <div>
+                <p class="text-muted" id="control-update">No changes made.</p>
+            </div>
+
+            <div class="col-sm-3">
+                <p>Selected Mode: <span class="badge" id="selected-mode"></span></p>
+            </div>
+            <div class="col-sm-3">
+                <p>Selected Charger: <span class="badge" id="selected-charger"></span></p>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-sm-3 py-2">
+                    <button id="line-mode-btn" class="btn btn-primary btn-block"
+                            onclick="switch_to_line_mode('{{ api_host }}', '{{ api_port }}')">Line Mode
+                    </button>
+                </div>
+                <div class="col-sm-3 py-2">
+                    <button id="battery-mode-btn" class="btn btn-primary btn-block"
+                            onclick="switch_to_battery_mode('{{ api_host }}', '{{ api_port }}')">Battery Mode
+                    </button>
+                </div>
+                <div class="col-sm-3 py-2">
+                    <button id="charge-grid-btn" class="btn btn-primary btn-block" data-toggle="modal"
+                            data-target="#charge-current-modal">Charge From
+                        Grid
+                    </button>
+                </div>
+                <div class="col-sm-3 py-2">
+                    <button id="turn-off-grid-btn" class="btn btn-primary btn-block"
+                            onclick="turn_off_grid_charging('{{ api_host }}', '{{ api_port }}')">Turn Off Grid Charging
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal" id="charge-current-modal">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Grid charging</h5>
+                            <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="form-label mt-4" for="charge-current-value">What current would you like to
+                                    charge
+                                    at?</label>
+                                <input type="number" value="30" class="form-control" id="charge-current-value">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal"
+                                    onclick="turn_on_grid_charging('{{ api_host }}', '{{ api_port }}')">Turn On
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <div>
+                <h3 class="mt-4">Time series</h3>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div id="system-load-plot" class="mt-4"></div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div id="battery-percentage-plot" class="mt-4">
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div id="battery-charge-current-plot" class="mt-4">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div id="battery-voltage-plot" class="mt-4">
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <hr>
-
-    <div>
-      <h3 class="mt-4">Time series</h3>
-    </div>
-
-    <div class="row">
-      <div class="col-lg-12">
-        <div id="system-load-plot" class="mt-4"></div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-lg-6">
-        <div id="battery-percentage-plot" class="mt-4">
+        <div class="tab-pane fade" id="daily-usage" role="tabpanel">
+            <p>Just a placeholder for now...</p>
         </div>
-      </div>
-
-      <div class="col-lg-6">
-        <div id="battery-charge-current-plot" class="mt-4">
-        </div>
-      </div>
     </div>
 
-    <div class="row">
-      <div class="col-lg-12">
-        <div id="battery-voltage-plot" class="mt-4">
-        </div>
-      </div>
-    </div>
+</div>
 
-  </div>
+<!-- Bootstrap JS and dependencies -->
+<script src="static/jquery-3.7.0.slim.min.js"></script>
+<script src="static/bootstrap.min.js"></script>
+<!-- Custom JS -->
+<script src="static/button_functions.js"></script>
+<!-- Plotly JS -->
+<script src="static/plotly-2.24.1.min.js" charset="utf-8"></script>
+<script src="static/set_up_functions.js"></script>
+<script>setUpPlots('{{ api_host }}', '{{ api_port }}', 30);</script>
+<script>setUpElements('{{ api_host }}', '{{ api_port }}');</script>
 
-  <!-- Bootstrap JS and dependencies -->
-  <script src="static/jquery-3.7.0.slim.min.js"></script>
-  <script src="static/bootstrap.min.js"></script>
-  <!-- Custom JS -->
-  <script src="static/button_functions.js"></script>
-  <!-- Plotly JS -->
-  <script src="static/plotly-2.24.1.min.js" charset="utf-8"></script>
-  <script src="static/set_up_functions.js"></script>
-  <script>setUpPlots('{{ api_host }}', '{{ api_port }}', 30);</script>
-  <script>setUpElements('{{ api_host }}', '{{ api_port }}');</script>
+<script>
+   $('#allTabs a').click(function (e) {
+     e.preventDefault()
+     $(this).tab('show')
+       // Change the webpage title to reflect the tab that is selected
+         document.title = "Sunny Jim | " + $(this).text();
+   })
+</script>
 </body>
 
 </html>

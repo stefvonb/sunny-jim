@@ -29,8 +29,8 @@ sql_database:
 notifications:
   host: "http://192.168.0.102:9080"
   topic: "sunny_jim"
-  grid_change_notifications: true
-  low_battery_notifications: true
+  grid_change_notifications: false
+  low_battery_notifications: false
   low_battery_level_percentage: 25
   switch_action: "/devices/control/inverter/SWITCH_TO_LINE_MODE/"
 
