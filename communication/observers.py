@@ -16,6 +16,7 @@ import aiohttp
 
 log = logging.getLogger("Observers")
 
+
 class DeviceObserver(abc.ABC):
     @abc.abstractmethod
     async def update(self, device):
@@ -70,10 +71,10 @@ class CsvFileLoggingObserver(DeviceObserver):
     def __del__(self):
         if self.current_file is not None:
             self.current_file.close()
-            
+
 
 class WebsocketServer:
-    def __init__(self, host:str, port:int, shared_queue: asyncio.Queue):
+    def __init__(self, host: str, port: int, shared_queue: asyncio.Queue):
         self.host = host
         self.port = port
         self.connections = set()
@@ -158,7 +159,6 @@ class SQLSession:
             async with self.engine.begin() as connection:
                 await connection.execute(statement)
 
-
     async def stop(self):
         self.running = False
         self.statement_queue.put_nowait(None)
@@ -173,11 +173,10 @@ class SQLDatabaseObserver(DeviceObserver):
         self.table_exists = False
         self.ready = ready
 
-
     async def update(self, device):
         # TODO Need to think about if I add additional columns
         device_state = device.get_state_dictionary()
-        
+
         if device_state is None:
             log.warning(f"Device {self.device_id} did not fill its state dictionary")
 
@@ -197,7 +196,6 @@ class SQLDatabaseObserver(DeviceObserver):
         insert_statement = insert(table).values(device_state)
         await self.statement_queue.put(insert_statement)
 
-
     def new_table_expression(self, state_dictionary):
         type_mapping = {
             str: String,
@@ -211,7 +209,7 @@ class SQLDatabaseObserver(DeviceObserver):
         for key, value in state_dictionary.items():
             column_type = type_mapping[type(value)]
             table.append_column(Column(key, column_type))
-        
+
         create_expression = CreateTable(table)
         return create_expression
 
@@ -265,7 +263,8 @@ class GridChangeNotificationObserver(NotificationObserver):
 class LowBatteryNotificationObserver(NotificationObserver):
     NOTIFICATION_TITLE = "Low Battery"
 
-    def __init__(self, device_id: str, webhook_endpoint: str, low_battery_level: int, switch_action: str = None, icon_url: str = None):
+    def __init__(self, device_id: str, webhook_endpoint: str, low_battery_level: int, switch_action: str = None,
+                 icon_url: str = None):
         super().__init__(device_id, webhook_endpoint, icon_url)
         self.low_battery_level = low_battery_level
         self.notification_sent = False

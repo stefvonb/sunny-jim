@@ -1,3 +1,5 @@
+import datetime
+
 from fastapi import FastAPI, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
@@ -106,6 +108,20 @@ def register_data_endpoints(app: FastAPI, data_interface: DataInterface, daemon:
         if result is None:
             raise HTTPException(status_code=404, detail=f"No data found for device {device.device_id}.")
         
+        return result
+
+    @app.post("/data/summarise/{device_key}/")
+    async def summarise_data(device_key: str, cutoff_time: datetime.datetime):
+        device = device_from_key(device_key, daemon)
+        # Round to the nearest minute
+        cutoff_time = cutoff_time.replace(second=0, microsecond=0)
+        cutoff_timestamp = int(cutoff_time.timestamp())
+
+        result = await data_interface.summarise_data(device.device_id, cutoff_timestamp)
+
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"No data found for device {device.device_id}.")
+
         return result
 
 
