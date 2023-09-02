@@ -26,8 +26,8 @@ websocket_streaming:
   port: 8765
 
 sql_database:
-  sql_driver: "sqlite+aiosqlite"
-  database_path: "database/db.sqlite"
+  sql_driver: "postgresql+asyncpg"
+  database_path: "sunny_jim:sunny_jim@192.168.0.102:5432/sunny-jim"
 
 devices:
   dyness_a48100:

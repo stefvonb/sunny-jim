@@ -87,16 +87,16 @@ class WebsocketServer:
 
     async def run_server(self):
         log.info(f"Starting websocket server at ws://{self.host}:{self.port}...")
-        try:
-            async with websockets.serve(self.register_connection, self.host, self.port, ping_interval=None):
-                while self.running:
-                    message = await self.message_queue.get()
-                    if message is None:
-                        continue
-                    for connection in self.connections:
+        async with websockets.serve(self.register_connection, self.host, self.port, ping_interval=None):
+            while self.running:
+                message = await self.message_queue.get()
+                if message is None:
+                    continue
+                for connection in self.connections:
+                    try:
                         await connection.send(message)
-        except websockets.ConnectionClosed:
-            log.info("Websocket connection terminated...")
+                    except websockets.ConnectionClosed:
+                        log.info("Websocket connection terminated...")
 
     async def stop(self):
         for connection in list(self.connections):
