@@ -18,16 +18,19 @@ class VoltronicModes(Enum):
     FAULT_MODE = 5
     POWER_SAVING_MODE = 6
 
+
 class OutputPriority(Enum):
     UTILITY_FIRST = 0
     SOLAR_FIRST = 1
     SBU_FIRST = 2
+
 
 class ChargerPriority(Enum):
     UTILITY_FIRST = 0
     SOLAR_FIRST = 1
     SOLAR_AND_UTILITY = 2
     SOLAR_ONLY = 3
+
 
 class KodakOGX548Inverter(Inverter):
     BAUD_RATE: int = 2400
@@ -88,13 +91,13 @@ class KodakOGX548Inverter(Inverter):
         self.QPIGS = self.generate_command("QPIGS")
         self.QMOD = self.generate_command("QMOD")
         self.QPIRI = self.generate_command("QPIRI")
-        self.POP00 = self.generate_command("POP00") # Sets to utility first
-        self.POP02 = b'\x50\x4F\x50\x30\x32\xE2\x0B\x0D' # For some reason, the CRC doesn't work here
-        self.PCP02 = self.generate_command("PCP02") # Sets charging from solar and utility
-        self.PCP03 = self.generate_command("PCP03") # Sets charging from solar only
+        self.POP00 = self.generate_command("POP00")  # Sets to utility first
+        self.POP02 = b'\x50\x4F\x50\x30\x32\xE2\x0B\x0D'  # For some reason, the CRC doesn't work here
+        self.PCP02 = self.generate_command("PCP02")  # Sets charging from solar and utility
+        self.PCP03 = self.generate_command("PCP03")  # Sets charging from solar only
 
-        self.desired_mode = None # It can take a while to switch modes, so we need to remember what we want to switch to
-        self.persisted_mode = None # This is to remember what to switch back to after charging from utility
+        self.desired_mode = None  # It can take a while to switch modes, so we need to remember what we want to switch to
+        self.persisted_mode = None  # This is to remember what to switch back to after charging from utility
 
         self.NAK = b'(NAKss\r'
         self.ACK = b'(ACK9 \r'
@@ -160,7 +163,9 @@ class KodakOGX548Inverter(Inverter):
             self.load_va = decoded_state['load_va']
             self.load_power = decoded_state['load_power']
             self.load_percentage = decoded_state['load_percentage']
-            self.battery_charge_current = decoded_state['battery_charge_current'] if decoded_state['battery_charge_current'] > 0 else -decoded_state['battery_discharge_current']
+            self.battery_charge_current = decoded_state['battery_charge_current'] if decoded_state[
+                                                                                         'battery_charge_current'] > 0 else - \
+            decoded_state['battery_discharge_current']
             self.pv_charge_current = decoded_state['pv_to_battery_charge_current']
             self.grid_charge_current = self.battery_charge_current - self.pv_charge_current if self.battery_charge_current > 0 else 0
             self.pv_input_voltage = decoded_state['pv_voltage']
@@ -168,7 +173,7 @@ class KodakOGX548Inverter(Inverter):
             self.output_mode = self.MODE_BUCKET[decoded_state['mode']]
             self.grid_state = OnOffState.ON if decoded_state['grid_ac_voltage'] > 0 else OnOffState.OFF
             self.selected_mode = self.SELECTED_MODE_BUCKET[decoded_state['output_priority']]
-            self.selected_charger = self.CHARGER_MODE_BUCKET[decoded_state['charger_priority']] 
+            self.selected_charger = self.CHARGER_MODE_BUCKET[decoded_state['charger_priority']]
 
             await asyncio.sleep(self.POLL_TIME)
 
@@ -210,7 +215,6 @@ class KodakOGX548Inverter(Inverter):
             'charger_priority': charger_priority
         }
 
-
     async def switch_to_line_mode(self) -> bool:
         self.inverter_writer.write(self.POP00)
 
@@ -228,7 +232,7 @@ class KodakOGX548Inverter(Inverter):
         if pop02_response == self.ACK:
             self.desired_mode = OutputMode.BATTERY
             return True
-        
+
         return False
 
     async def turn_on_grid_charging(self, current: int = None) -> bool:
@@ -255,23 +259,22 @@ class KodakOGX548Inverter(Inverter):
         pcp02_response = await self.inverter_reader.readuntil(b'\r')
         if pcp02_response == self.ACK:
             return True
-        
+
         return False
 
     async def turn_off_grid_charging(self) -> bool:
         if self.persisted_mode == OutputMode.BATTERY:
             if not await self.switch_to_battery_mode():
                 self.log.error("Failed to switch back to battery mode after grid charging.")
-            
+
         self.inverter_writer.write(self.PCP03)
 
         pcp03_response = await self.inverter_reader.readuntil(b'\r')
         if pcp03_response == self.ACK:
             return True
-        
-        return False
 
+        return False
 
     def get_closest_charge_current(self, input_charge_current: int):
         available_values = [2, 10, 20, 30, 40, 50]
-        return min(available_values, key=lambda x:abs(x-input_charge_current))
+        return min(available_values, key=lambda x: abs(x - input_charge_current))

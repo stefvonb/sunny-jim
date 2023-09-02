@@ -11,7 +11,7 @@ web_interface:
   allowed_origins:
     - "*"
 
-print_updates: true
+print_updates: false
 
 connections: # Settings for connecting devices
   num_connection_tries: 5
@@ -26,7 +26,7 @@ sql_database:
   database_path: "/sunny_jim.db"
 
 devices:
-  Mock Battery:
+  MockBattery:
     type: "MockBattery"
     voltage_value: 48.0
     current_value: 7.5
@@ -35,3 +35,6 @@ devices:
     cell_voltage_value: 3.5
     temperature_value: 18
     num_cells: 8
+
+  MockInverter:
+    type: "MockInverter"

@@ -8,6 +8,7 @@ from enum import Enum
 
 from communication.observers import DeviceObserver
 
+
 class DeviceType(Enum):
     UNSPECIFIED = "unspecified"
     INVERTER = "inverter"
@@ -23,6 +24,7 @@ class OutputMode(Enum):
     LINE = "line"
     BATTERY = "battery"
     UNKNOWN = "unknown"
+
 
 class Charger(Enum):
     GRID = "grid"
@@ -175,9 +177,9 @@ class Battery(Device, ABC):
         state_dictionary["state_of_charge"] = self.state_of_charge
         state_dictionary["state_of_health"] = self.state_of_health
         for i, cell_voltage in enumerate(self.cell_voltages):
-            state_dictionary[f"voltage_cell_{i+1}"] = cell_voltage
+            state_dictionary[f"voltage_cell_{i + 1}"] = cell_voltage
         for i, temperature in enumerate(self.temperatures):
-            state_dictionary[f"temperature_{i+1}"] = temperature
+            state_dictionary[f"temperature_{i + 1}"] = temperature
 
         return state_dictionary
 
@@ -209,8 +211,9 @@ class Inverter(Device, ABC):
         state_dictionary = super().get_state_dictionary()
         if any(e is None for e in [self.grid_voltage, self.grid_frequency, self.output_voltage, self.output_frequency,
                                    self.load_power, self.load_va, self.load_percentage, self.battery_charge_current,
-                                   self.grid_charge_current, self.pv_charge_current, self.pv_input_voltage, 
-                                   self.pv_input_power, self.grid_state, self.output_mode, self.selected_mode, self.selected_charger]):
+                                   self.grid_charge_current, self.pv_charge_current, self.pv_input_voltage,
+                                   self.pv_input_power, self.grid_state, self.output_mode, self.selected_mode,
+                                   self.selected_charger]):
             return None
 
         state_dictionary["grid_voltage"] = self.grid_voltage
@@ -232,7 +235,6 @@ class Inverter(Device, ABC):
 
         return state_dictionary
 
-    
     @abstractmethod
     async def switch_to_line_mode(self) -> bool:
         pass
@@ -242,7 +244,7 @@ class Inverter(Device, ABC):
         pass
 
     @abstractmethod
-    async def turn_on_grid_charging(self) -> bool:
+    async def turn_on_grid_charging(self, current: int = None) -> bool:
         pass
 
     @abstractmethod
@@ -254,6 +256,7 @@ class Inverter(Device, ABC):
                 CommandType.SWITCH_TO_BATTERY_MODE: self.switch_to_battery_mode,
                 CommandType.TURN_ON_GRID_CHARGING: self.turn_on_grid_charging,
                 CommandType.TURN_OFF_GRID_CHARGING: self.turn_off_grid_charging}
+
 
 class DeviceInitialisationError(Exception):
     pass

@@ -136,3 +136,6 @@ data/
 
 .DS_Store
 build_for_docker.sh
+
+# Custom stuff
+sunny_jim.db

@@ -3,7 +3,14 @@ import time
 import asyncio
 
 import communication
-from communication.devices import Battery
+from communication.devices import Battery, Inverter, OutputMode, Charger, OnOffState
+
+
+def random_one_percent(number: float):
+    random_number = random.random()
+    one_percent_of = 0.01 * number
+    plus_minus = random.choice([-1, 1])
+    return float(round(number + plus_minus * (one_percent_of * random_number), 2))
 
 
 class MockBattery(Battery):
@@ -34,21 +41,70 @@ class MockBattery(Battery):
     async def receive(self):
         await asyncio.sleep(self.UPDATE_INTERVAL)
         self.time_updated = time.time()
-        self.voltage = MockBattery.random_one_percent(self.voltage_value)
-        self.current = MockBattery.random_one_percent(self.current_value)
-        self.state_of_charge = MockBattery.random_one_percent(self.soc_value)
+        self.voltage = random_one_percent(self.voltage_value)
+        self.current = random_one_percent(self.current_value)
+        self.state_of_charge = random_one_percent(self.soc_value)
         self.state_of_health = self.soh_value
-        self.cell_voltages = [MockBattery.random_one_percent(self.cell_voltage_value) for _ in
-                                range(self.num_cells)]
-        self.temperatures = [MockBattery.random_one_percent(self.temperature_value)]
+        self.cell_voltages = [random_one_percent(self.cell_voltage_value) for _ in
+                              range(self.num_cells)]
+        self.temperatures = [random_one_percent(self.temperature_value)]
 
     async def send(self):
         # Do nothing
         await asyncio.sleep(self.UPDATE_INTERVAL)
 
-    @staticmethod
-    def random_one_percent(number: float):
-        random_number = random.random()
-        one_percent_of = 0.01 * number
-        plus_minus = random.choice([-1, 1])
-        return float(round(number + plus_minus * (one_percent_of * random_number), 2))
+
+class MockInverter(Inverter):
+    def __init__(self, device_id: str):
+        super().__init__(device_id)
+        self.selected_mode = OutputMode.BATTERY
+        self.selected_charger = Charger.SOLAR
+        self.grid_state = OnOffState.ON
+
+    async def switch_to_line_mode(self) -> bool:
+        self.selected_mode = OutputMode.LINE
+        return True
+
+    async def switch_to_battery_mode(self) -> bool:
+        self.selected_mode = OutputMode.BATTERY
+        return True
+
+    async def turn_on_grid_charging(self, current: int = None) -> bool:
+        self.selected_charger = Charger.GRID
+        return True
+
+    async def turn_off_grid_charging(self) -> bool:
+        self.selected_charger = Charger.SOLAR
+        return True
+
+    async def try_connect(self) -> bool:
+        return True
+
+    async def try_disconnect(self) -> bool:
+        return True
+
+    async def send(self) -> None:
+        # Using this as a mechanism to change the grid state
+        await asyncio.sleep(60)
+        self.grid_state = OnOffState.OFF
+        await asyncio.sleep(60)
+        self.grid_state = OnOffState.ON
+
+    async def receive(self) -> None:
+        self.time_updated = time.time()
+        self.grid_voltage = random_one_percent(230)
+        self.grid_frequency = random_one_percent(50)
+        self.output_voltage = random_one_percent(230)
+        self.output_frequency = random_one_percent(50)
+        self.load_va = random_one_percent(1000)
+        self.load_power = random_one_percent(900)
+        self.load_percentage = random_one_percent(0.25)
+        self.battery_charge_current = random_one_percent(10)
+        self.pv_charge_current = random_one_percent(3)
+        self.grid_charge_current = self.battery_charge_current - self.pv_charge_current \
+            if self.battery_charge_current > 0 else 0
+        self.pv_input_voltage = random_one_percent(150)
+        self.pv_input_power = random_one_percent(500)
+        self.output_mode = self.selected_mode
+
+        await asyncio.sleep(1)
