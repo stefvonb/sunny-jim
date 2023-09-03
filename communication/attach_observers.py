@@ -36,7 +36,7 @@ def attach_observers(devices: dict[str, Device], config: dict):
 
     if "notifications" in config:
         webhook_endpoint = f"{config['notifications']['host']}/{config['notifications']['topic']}"
-        icon_url = f"{config['web_interface']['protocol']}://{config['web_interface']['host']}:{config['web_interface']['port']}/static/favicon.png"
+        icon_url = config["notifications"]["icon_url"]
 
         if "grid_change_notifications" in config["notifications"] and config["notifications"]["grid_change_notifications"]:
             for device_id, device in devices.items():

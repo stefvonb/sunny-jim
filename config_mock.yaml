@@ -33,6 +33,7 @@ notifications:
   low_battery_notifications: false
   low_battery_level_percentage: 25
   switch_action: "/devices/control/inverter/SWITCH_TO_LINE_MODE/"
+  icon_url: "https://github.com/stefvonb/sunny-jim/blob/main/web_interface/static/favicon.png?raw=true"
 
 devices:
   MockBattery:
