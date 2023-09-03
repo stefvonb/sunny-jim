@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" sizes="32x32" href="static/favicon.png">
     <title>Sunny Jim | Dashboard</title>
     <link type="image/png" sizes="32x32" rel="icon" href="static/favicon.png">
     <!-- Bootstrap CSS -->
@@ -225,12 +227,12 @@
 <script>setUpElements('{{ api_host }}', '{{ api_port }}');</script>
 
 <script>
-   $('#allTabs a').click(function (e) {
-     e.preventDefault()
-     $(this).tab('show')
-       // Change the webpage title to reflect the tab that is selected
-         document.title = "Sunny Jim | " + $(this).text();
-   })
+    $('#allTabs a').click(function (e) {
+        e.preventDefault()
+        $(this).tab('show')
+        // Change the webpage title to reflect the tab that is selected
+        document.title = "Sunny Jim | " + $(this).text();
+    })
 </script>
 </body>
 
