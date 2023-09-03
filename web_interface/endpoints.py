@@ -122,6 +122,9 @@ def register_data_endpoints(app: FastAPI, data_interface: DataInterface, daemon:
         if result is None:
             raise HTTPException(status_code=404, detail=f"No data found for device {device.device_id}.")
 
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["error"])
+
         return result
 
 

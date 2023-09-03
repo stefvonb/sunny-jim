@@ -9,7 +9,7 @@ from abc import ABC
 import websockets
 import json
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import Table, String, Column, Integer, Float, MetaData, insert, event
+from sqlalchemy import Table, String, Column, Integer, Float, MetaData, insert, event, text
 from sqlalchemy.schema import CreateTable
 from data_management import sql_utilities
 import aiohttp
@@ -148,7 +148,7 @@ class SQLSession:
         log.info(f"Starting SQL session with engine '{self.engine.name}'...")
         async with self.engine.begin() as connection:
             await connection.run_sync(self.metadata.create_all)
-            await connection.run_sync(self.metadata.reflect)
+            await connection.run_sync(self.metadata.reflect, views=True)
 
             self.ready[0] = True
 
@@ -203,6 +203,13 @@ class SQLDatabaseObserver(DeviceObserver):
                 log.info(f"Creating new summary table '{self.summary_name}' in database...")
                 await self.statement_queue.put(self.new_table_expression(self.summary_name, device_state, True))
 
+        if not self.view_exists:
+            self.view_exists = self.view_name in table_names
+
+            if not self.view_exists:
+                log.info(f"Creating new view '{self.view_name}' in database...")
+                await self.statement_queue.put(self.new_view_expression(device_state))
+
         table = self.metadata.tables[self.table_name]
         insert_statement = insert(table).values(device_state)
         await self.statement_queue.put(insert_statement)
@@ -227,6 +234,14 @@ class SQLDatabaseObserver(DeviceObserver):
 
         create_expression = CreateTable(table)
         return create_expression
+
+    def new_view_expression(self, state_dictionary):
+        view_columns = state_dictionary.keys()
+        columns_sql = ", ".join(view_columns)
+
+        view_sql = (f"create view {self.view_name} as select {columns_sql} from {self.summary_name} "
+                    f"union all select {columns_sql} from {self.table_name}")
+        return text(view_sql)
 
 
 class NotificationObserver(DeviceObserver, ABC):

@@ -56,7 +56,7 @@ class SQLDataInterface(DataInterface):
 
     async def get_last_n_entries(self, device_id: str, n: int, columns: list[str] = None):
         async with self.engine.connect() as connection:
-            table_name = sql_utilities.get_table_name(device_id)
+            table_name = sql_utilities.get_view_name(device_id)
             selection_columns = sql_utilities.get_selection_columns(columns)
 
             query = text(f"SELECT {selection_columns} FROM {table_name} ORDER BY time_updated DESC LIMIT {n}")
@@ -66,7 +66,7 @@ class SQLDataInterface(DataInterface):
 
     async def get_last_n_minutes(self, device_id: str, n: int, columns: list[str] = None):
         async with self.engine.connect() as connection:
-            table_name = sql_utilities.get_table_name(device_id)
+            table_name = sql_utilities.get_view_name(device_id)
             selection_columns = sql_utilities.get_selection_columns(columns)
 
             past_timestamp = time() - n * 60
@@ -78,7 +78,7 @@ class SQLDataInterface(DataInterface):
 
     async def get_when_grid_last_on(self, device_id: str):
         async with self.engine.connect() as connection:
-            table_name = sql_utilities.get_table_name(device_id)
+            table_name = sql_utilities.get_view_name(device_id)
 
             query = text(
                 f"SELECT time_updated FROM {table_name} WHERE grid_state = 'on' ORDER BY time_updated DESC LIMIT 1")
@@ -122,10 +122,13 @@ class SQLDataInterface(DataInterface):
                           f"main_group.leading_minute = outer_group.leading_minute "
                           f"order by time_updated;")
 
-            await connection.execute(text(full_query))
+            try:
+                await connection.execute(text(full_query))
 
-            # Drop all the summarised data from the main table
-            deletion_query = f"DELETE FROM {table_name} WHERE time_updated <= {cutoff_timestamp}"
-            await connection.execute(text(deletion_query))
+                # Drop all the summarised data from the main table
+                deletion_query = f"DELETE FROM {table_name} WHERE time_updated <= {cutoff_timestamp}"
+                await connection.execute(text(deletion_query))
+            except Exception as e:
+                return {"success": False, "error": str(e)}
 
             return {"success": True}
