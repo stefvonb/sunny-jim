@@ -56,7 +56,7 @@ class SQLDataInterface(DataInterface):
 
     async def get_last_n_entries(self, device_id: str, n: int, columns: list[str] = None):
         async with self.engine.connect() as connection:
-            table_name = sql_utilities.get_view_name(device_id)
+            table_name = sql_utilities.get_table_name(device_id)
             selection_columns = sql_utilities.get_selection_columns(columns)
 
             query = text(f"SELECT {selection_columns} FROM {table_name} ORDER BY time_updated DESC LIMIT {n}")
@@ -66,7 +66,7 @@ class SQLDataInterface(DataInterface):
 
     async def get_last_n_minutes(self, device_id: str, n: int, columns: list[str] = None):
         async with self.engine.connect() as connection:
-            table_name = sql_utilities.get_view_name(device_id)
+            table_name = sql_utilities.get_table_name(device_id)
             selection_columns = sql_utilities.get_selection_columns(columns)
 
             past_timestamp = time() - n * 60
@@ -78,7 +78,7 @@ class SQLDataInterface(DataInterface):
 
     async def get_when_grid_last_on(self, device_id: str):
         async with self.engine.connect() as connection:
-            table_name = sql_utilities.get_view_name(device_id)
+            table_name = sql_utilities.get_table_name(device_id)
 
             query = text(
                 f"SELECT time_updated FROM {table_name} WHERE grid_state = 'on' ORDER BY time_updated DESC LIMIT 1")
@@ -111,7 +111,7 @@ class SQLDataInterface(DataInterface):
                     outer_sql += f", main_group.{column.name} as {column.name}, main_group.{column.name}_stdev as {column.name}_stdev"
                     ordered_columns.append(column.name)
                     ordered_columns.append(f"{column.name}_stdev")
-                    averaging_sql += f", avg({column.name}) as {column.name}, stdev({column.name}) as {column.name}_stdev"
+                    averaging_sql += f", avg({column.name}) as {column.name}, stddev({column.name}) as {column.name}_stdev"
 
             summary_name = sql_utilities.get_summary_name(device_id)
             ordered_columns_string = ", ".join(ordered_columns)
