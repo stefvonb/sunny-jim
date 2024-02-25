@@ -10,6 +10,7 @@ COPY ./requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
 COPY . /app
-RUN mkdir -p /app/database
+RUN mkdir -p /app/config
+RUN cp /app/config.yaml /app/config/config.yaml
 
-CMD ["python3", "sunny_jim.py"]
+CMD ["python3", "/app/sunny_jim.py", "--config", "/app/config/config.yaml"]
